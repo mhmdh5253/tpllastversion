@@ -1,14 +1,14 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<Nullable>disable</Nullable>
-		<NoWarn>CS8618;CS8625;CS8604</NoWarn>
+		<Nullable>enable</Nullable>
+		<!-- حذف NoWarn برای بهبود کیفیت کد -->
 	</PropertyGroup>
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <RunAnalyzersDuringLiveAnalysis>true</RunAnalyzersDuringLiveAnalysis>
-    <AnalysisLevel>6.0-all</AnalysisLevel>
+    <AnalysisLevel>latest</AnalysisLevel>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

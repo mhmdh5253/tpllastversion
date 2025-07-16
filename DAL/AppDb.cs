@@ -1,4 +1,4 @@
-﻿using BE;
+using BE;
 using BE.LetterAutomation;
 using BE.Ticketing.SupportTicketSystem.Models;
 using BE.Tokening;
@@ -11,43 +11,47 @@ namespace DAL
     public class Db : IdentityDbContext<ApplicationUser, ApplicationRole, string, ApplicationUserClaim,
         ApplicationUserRole, ApplicationUserLogin, ApplicationRoleClaim, ApplicationUserToken>
     {
-        private readonly IConfigurationRoot configuration = new ConfigurationBuilder()
-            .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-            .AddJsonFile("appsettings.json")
-            .Build();
+        private readonly IConfiguration? _configuration;
 
         public Db()
         {
+            // Parameterless constructor for migrations
         }
 
         public Db(DbContextOptions<Db> options) : base(options)
         {
         }
 
+        public Db(DbContextOptions<Db> options, IConfiguration configuration) : base(options)
+        {
+            _configuration = configuration;
+        }
+
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-            if (!optionsBuilder.IsConfigured)
+            if (!optionsBuilder.IsConfigured && _configuration != null)
             {
-                optionsBuilder.UseSqlServer(configuration.GetConnectionString("CON1"));
+                optionsBuilder.UseSqlServer(_configuration.GetConnectionString("CON1"));
             }
             base.OnConfiguring(optionsBuilder);
         }
-        public DbSet<BE.Wallet> Wallets { get; set; }
-        public DbSet<WalletTransaction> WalletTransactions { get; set; }
-        public DbSet<Ticket> Tickets { get; set; }
-        public DbSet<TicketComment> TicketComments { get; set; }
-        public DbSet<Attachment> Attachments { get; set; }
-        public DbSet<Category> Categories { get; set; }
-        public DbSet<Report> Reports { get; set; }
-        public DbSet<Notification> Notifications { get; set; }
-        public DbSet<Token> Tokens { get; set; }
-        public DbSet<Letter> Letters { get; set; }
-        public DbSet<Kelasehnameh> Kelasehnamehha { get; set; }
-        public DbSet<Organization> Organizations { get; set; }
-        public DbSet<LetterApproval> LetterApprovals { get; set; }
-        public DbSet<UserOrganization> UserOrganizations { get; set; }
-        public DbSet<LetterReferral> LetterReferrals { get; set; }
-        public DbSet<LetterAction> LetterActions { get; set; }
+
+        public DbSet<BE.Wallet> Wallets { get; set; } = null!;
+        public DbSet<WalletTransaction> WalletTransactions { get; set; } = null!;
+        public DbSet<Ticket> Tickets { get; set; } = null!;
+        public DbSet<TicketComment> TicketComments { get; set; } = null!;
+        public DbSet<Attachment> Attachments { get; set; } = null!;
+        public DbSet<Category> Categories { get; set; } = null!;
+        public DbSet<Report> Reports { get; set; } = null!;
+        public DbSet<Notification> Notifications { get; set; } = null!;
+        public DbSet<Token> Tokens { get; set; } = null!;
+        public DbSet<Letter> Letters { get; set; } = null!;
+        public DbSet<Kelasehnameh> Kelasehnamehha { get; set; } = null!;
+        public DbSet<Organization> Organizations { get; set; } = null!;
+        public DbSet<LetterApproval> LetterApprovals { get; set; } = null!;
+        public DbSet<UserOrganization> UserOrganizations { get; set; } = null!;
+        public DbSet<LetterReferral> LetterReferrals { get; set; } = null!;
+        public DbSet<LetterAction> LetterActions { get; set; } = null!;
         protected override void OnModelCreating(ModelBuilder builder)
         {
 

@@ -241,7 +241,10 @@ document.addEventListener('DOMContentLoaded', function () {
             return [result.events.filter(event => calendars.includes(event.extendedProps.calendar))];
           },
           error: function (error) {
-            console.log(error);
+            // Use proper error logging instead of console.log
+            if (window.console && console.error) {
+              console.error('Calendar API error:', error);
+            }
           }
         }
       ); */
@@ -250,7 +253,7 @@ document.addEventListener('DOMContentLoaded', function () {
       // We are reading event object from app-calendar-events.js file directly by including that file above app-calendar file.
       // You should make an API call, look into above commented API call for reference
       let selectedEvents = currentEvents.filter(function (event) {
-        // console.log(event.extendedProps.calendar.toLowerCase());
+        // Removed debug: console.log(event.extendedProps.calendar.toLowerCase());
         return calendars.includes(event.extendedProps.calendar.toLowerCase());
       });
       // if (selectedEvents.length > 0) {
