@@ -1,0 +1,21 @@
+﻿@model BE.LetterAutomation.UserOrganization
+@{
+    ViewData["Title"] = "حذف دسترسی کاربر از سازمان";
+
+}
+<h3>آیا از حذف این دسترسی مطمئن هستید؟</h3>
+<div>
+    <dl class="row">
+        <dt class="col-sm-2">کاربر:</dt>
+        <dd class="col-sm-10">@Model.User!.FirstName @Model.User.LastName</dd>
+
+        <dt class="col-sm-2">سازمان:</dt>
+        <dd class="col-sm-10">@Model.Organization!.Name</dd>
+    </dl>
+
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="Id" />
+        <input type="submit" value="حذف" class="btn btn-danger" />
+        <a asp-action="Index" class="btn btn-secondary">انصراف</a>
+    </form>
+</div>

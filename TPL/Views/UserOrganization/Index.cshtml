@@ -1,0 +1,108 @@
+﻿@using BLL.LetterAutomation
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model IEnumerable<BE.LetterAutomation.UserOrganization>
+@inject BlRecivers Recivers
+
+@section pagecss
+{
+    <link rel="stylesheet" href="~/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css" />
+    <link rel="stylesheet" href="~/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css" />
+}
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">چارت کاربران سازمانی
+            <a style="float: left;" asp-action="Create" class="btn btn-primary">افزودن کاربر جدید</a>
+
+        </h3>
+    </div>
+    <div class="card-body">
+        <table id="dataTable" class="table table-bordered table-hover">
+            <thead>
+            <tr>
+                <th>نام کاربر</th>
+                <th>سازمان</th>
+                <th>سمت</th>
+                <th>مسئول؟</th>
+                <th>جانشین؟</th>
+                <th>وضعیت</th>
+                <th>عملیات</th>
+            </tr>
+            </thead>
+            <tbody>
+            @foreach (var item in Model)
+            {
+                <tr>
+                    <td>@item?.User?.FirstName @item?.User?.LastName</td>
+                    <td>@await Recivers.GetReceiverFullPath(@item!.OrganizationId.ToString())</td>
+                    <td>@item?.Position</td>
+                    <td>
+                        @if (item!.IsHead)
+                        {
+                            <span class="badge badge-success">بله</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-secondary">خیر</span>
+                        }
+                    </td>
+                    <td>
+                        @if (item.IsDeputy)
+                        {
+                            <span class="badge badge-info">بله</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-secondary">خیر</span>
+                        }
+                    </td>
+                    <td>
+                        @if (item.IsActive)
+                        {
+                            <span class="badge badge-success">فعال</span>
+                        }
+                        else
+                        {
+                            <span class="badge badge-danger">غیرفعال</span>
+                        }
+                    </td>
+                    <td>
+                        <div class="btn-group" role="group">
+
+                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">ویرایش</a>
+                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info">جزئیات</a>
+                            <form asp-action="Delete">
+                                <input type="hidden" name="id" for="id" value="@item.Id"/>
+                                <button type="submit" class="btn btn-sm btn-danger">غیر فعال</button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+@section vendorjs {
+    <script src="~/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+}
+
+@section PageJs {
+    <script src="~/assets/js/tables-datatables-advanced.js"></script>
+    <script>
+        $(document).ready(function(){
+                $('#dataTable').DataTable();
+
+                // Initialize tooltips
+                $('[data-bs-toggle="tooltip"]').tooltip();
+
+                // Add animation to status badges
+                setInterval(function() {
+                        $('.status-badge').addClass('animate__pulse');
+                        setTimeout(function() {
+                                $('.status-badge').removeClass('animate__pulse');
+                            }, 1000);
+                    }, 3000);
+            });
+    </script>
+}

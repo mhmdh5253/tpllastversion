@@ -1,0 +1,3 @@
+﻿@using HodHodWeb
+@using HodHodWeb.Models
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers

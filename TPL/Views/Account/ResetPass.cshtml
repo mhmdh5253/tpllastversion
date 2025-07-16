@@ -1,0 +1,94 @@
+﻿@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model TPLWeb.Models.ResetPassModel
+
+
+@{
+    ViewData["Title"] = "تغییر رمز عبور";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+@section vendorcss
+{
+    <link rel="stylesheet" href="~/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css" />
+    <link rel="stylesheet" href="~/assets/vendor/libs/flatpickr/flatpickr.css" />
+}
+
+@section pagecss
+{
+}
+
+<style>
+    [dir=rtl] .me-4 {
+        margin-left: 1px !important;
+    }
+</style>
+
+<div class="row">
+    <div class="col-md-12">
+        <partial name="Admin/_ProfileParitial" />
+        <div class="card mb-4">
+            <h4 class="card-header">تغییر رمز عبور</h4>
+            <!-- Account -->
+            <div class="card-body pt-2 mt-1">
+                @if (TempData["res"] is not null)
+                {
+                    <h6 class="card-header text-success">@TempData["res"]</h6>
+
+                }
+                <span class="text-danger">
+                    @Html.ValidationSummary()
+                </span>
+
+                <form asp-controller="Account" asp-action="ResetPass" method="post">
+                    <input asp-for="Id" hidden/>
+                    <div class="row">
+                        <input hidden asp-for="Id"/>
+                        <div class="col-md-6">
+                            <div class="form-floating form-floating-outline">
+                                <input maxlength="30" type="password"
+                                       asp-for="Password"
+                                       class="form-control bootstrap-maxlength"
+                                       placeholder="رمز عبور جدید"/>
+                                <label asp-for="Password">رمز عبور جدید</label>
+                            </div>
+                            <span asp-validation-for="Password" class="text-danger"></span>
+
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-floating form-floating-outline">
+                                <input maxlength="30" type="password"
+                                       asp-for="Password2"
+                                       class="form-control bootstrap-maxlength"
+                                       placeholder="تکرار رمز عبور"/>
+                                <label asp-for="Password2">تکرار رمز عبور</label>
+                                <span asp-validation-for="Password2" class="text-danger"></span>
+
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button type="submit" class="btn btn-primary me-2">ذخیره تغییرات</button>
+                    </div>
+                </form>
+            </div>
+            <!-- /Account -->
+        </div>
+    </div>
+</div>
+
+@section vendorjs
+{
+
+}
+
+@section PageJs
+{
+    <script src="~/assets/js/pages-account-settings-account.js"></script>
+
+
+
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+}

@@ -1,0 +1,65 @@
+﻿@using BE.LetterAutomation
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model BE.LetterAutomation.LetterApproval
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">جزئیات درخواست تایید</h3>
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">شماره نامه:</dt>
+            <dd class="col-sm-9">@Model?.Letter?.LetterNumber</dd>
+
+            <dt class="col-sm-3">موضوع نامه:</dt>
+            <dd class="col-sm-9">@Model?.Letter?.Subject</dd>
+
+            <dt class="col-sm-3">درخواست کننده:</dt>
+            <dd class="col-sm-9">@Model?.Requester?.FirstName @Model?.Requester?.LastName</dd>
+
+            <dt class="col-sm-3">تاییدکننده:</dt>
+            <dd class="col-sm-9">@Model?.Approver?.FirstName @Model?.Approver?.LastName</dd>
+
+            <dt class="col-sm-3">سازمان:</dt>
+            <dd class="col-sm-9">@Model?.Organization?.Name</dd>
+
+            <dt class="col-sm-3">سطح تایید:</dt>
+            <dd class="col-sm-9">@Model?.ApprovalLevel</dd>
+
+            <dt class="col-sm-3">وضعیت:</dt>
+            <dd class="col-sm-9">
+                @switch (Model?.Status)
+                {
+                    case ApprovalStatus.Pending:
+                        <span class="badge badge-warning">در انتظار</span>
+                        break;
+                    case ApprovalStatus.Approved:
+                        <span class="badge badge-success">تایید شده</span>
+                        break;
+                    case ApprovalStatus.Rejected:
+                        <span class="badge badge-danger">رد شده</span>
+                        break;
+                    case ApprovalStatus.Returned:
+                        <span class="badge badge-info">بازگشت داده شده</span>
+                        break;
+                    default:
+                        <span class="badge badge-info">نامشخص</span>
+                        break;
+                }
+            </dd>
+
+            <dt class="col-sm-3">تاریخ درخواست:</dt>
+            <dd class="col-sm-9">@Model!.RequestDate</dd>
+
+            <dt class="col-sm-3">تاریخ اقدام:</dt>
+            <dd class="col-sm-9">@(Model.ActionDate.ToString() ?? "-")</dd>
+
+            <dt class="col-sm-3">توضیحات:</dt>
+            <dd class="col-sm-9">@(string.IsNullOrEmpty(Model.Comment) ? "-" : Model.Comment)</dd>
+        </dl>
+
+        <div class="text-center">
+            <a asp-action="Index" class="btn btn-secondary">بازگشت به لیست</a>
+        </div>
+    </div>
+</div>

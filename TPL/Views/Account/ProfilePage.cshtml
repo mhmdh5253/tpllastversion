@@ -1,0 +1,341 @@
+﻿@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model TPLWeb.Models.ManageUser.AddViewModel
+@{
+    ViewData["Title"] = "حساب کاربری";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+@section vendorcss {
+}
+
+@section pagecss {
+    <style>
+        .profile-card {
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            border: none;
+        }
+
+        .profile-header {
+            background: linear-gradient(135deg, #7367f0 0%, #9e95f5 100%);
+            color: white;
+            border-radius: 10px 10px 0 0;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+            .profile-header:before {
+                content: "";
+                position: absolute;
+                top: -50px;
+                right: -50px;
+                width: 150px;
+                height: 150px;
+                border-radius: 50%;
+                background: rgba(255,255,255,0.1);
+            }
+
+        .profile-body {
+            padding: 25px;
+            background-color: #fff;
+        }
+
+        .info-section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            color: #7367f0;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #f5f5f5;
+            display: flex;
+            align-items: center;
+        }
+
+            .section-title i {
+                margin-left: 8px;
+                font-size: 1.2rem;
+            }
+
+        .info-item {
+            display: flex;
+            margin-bottom: 12px;
+        }
+
+        .info-label {
+            min-width: 120px;
+            color: #6c757d;
+            font-weight: 500;
+        }
+
+        .info-value {
+            font-weight: 500;
+            color: #5e5873;
+        }
+
+            .info-value.empty {
+                color: #b9b9c3;
+                font-style: italic;
+            }
+
+        .action-buttons {
+            margin-top: 30px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .company-logo {
+            width: 80px;
+            height: 80px;
+            object-fit: contain;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            padding: 5px;
+            background: white;
+        }
+    </style>
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <partial name="Admin/_ProfileParitial" />
+
+        @if (TempData["res"] != null)
+        {
+            <div class="alert alert-success alert-dismissible fade show">
+                <i class="fas fa-check-circle me-2"></i>
+                @TempData["res"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        @if (TempData["email"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show">
+                <i class="fas fa-exclamation-circle me-2"></i>
+                @TempData["email"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
+
+        <div class="profile-card">
+            <div class="profile-header">
+                <h4 class="mb-0"><i class="fas fa-user-circle me-2"></i>پروفایل کاربری</h4>
+            </div>
+            <div class="profile-body">
+                <!-- اطلاعات شخصی -->
+                <div class="info-section">
+                    <h5 class="section-title">
+                        <i class="fas fa-user"></i> اطلاعات شخصی
+                    </h5>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <span class="info-label">نام کامل:</span>
+                                <span class="info-value">@Model.FirstName @Model.LastName</span>
+                            </div>
+
+                            <div class="info-item">
+                                <span class="info-label">نام کاربری:</span>
+                                <span class="info-value">@Model.UserName</span>
+                            </div>
+
+                            <div class="info-item">
+                                <span class="info-label">نوع حساب:</span>
+                                <span class="info-value">@(string.IsNullOrEmpty(Model.AccountType) ? "ثبت نشده" : Model.AccountType)</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <span class="info-label">استان:</span>
+                                <span class="info-value">@(string.IsNullOrEmpty(Model.Ostan) ? "ثبت نشده" : Model.Ostan)</span>
+                            </div>
+
+                            <div class="info-item">
+                                <span class="info-label">آدرس:</span>
+                                <span class="info-value @(string.IsNullOrEmpty(Model.Address) ? "empty" : "")">
+                                    @(string.IsNullOrEmpty(Model.Address) ? "ثبت نشده" : Model.Address)
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- اطلاعات تماس -->
+                <div class="info-section">
+                    <h5 class="section-title">
+                        <i class="fas fa-address-card"></i> اطلاعات تماس
+                    </h5>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <span class="info-label">ایمیل:</span>
+                                <span class="info-value">@Model.Email</span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <span class="info-label">تلفن همراه:</span>
+                                <span class="info-value">@(string.IsNullOrEmpty(Model.Phone) ? "ثبت نشده" : Model.Phone)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- اطلاعات سازمانی -->
+                <div class="info-section">
+                    <h5 class="section-title">
+                        <i class="fas fa-building"></i> اطلاعات سازمانی
+                    </h5>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <span class="info-label">نام شرکت:</span>
+                                <span class="info-value @(string.IsNullOrEmpty(Model.CompanyName) ? "empty" : "")">
+                                    @(string.IsNullOrEmpty(Model.CompanyName) ? "ثبت نشده" : Model.CompanyName)
+                                </span>
+                            </div>
+
+                            <div class="info-item">
+                                <span class="info-label">نام اداره:</span>
+                                <span class="info-value @(string.IsNullOrEmpty(Model.NameEdareh) ? "empty" : "")">
+                                    @(string.IsNullOrEmpty(Model.NameEdareh) ? "ثبت نشده" : Model.NameEdareh)
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <div class="info-item">
+                                <span class="info-label">سمت:</span>
+                                <span class="info-value @(string.IsNullOrEmpty(Model.Semat) ? "empty" : "")">
+                                    @(string.IsNullOrEmpty(Model.Semat) ? "ثبت نشده" : Model.Semat)
+                                </span>
+                            </div>
+
+                            <div class="info-item">
+                                <span class="info-label">حق امضا:</span>
+                                <span class="info-value">
+                                    @(Model.HaqEmza ? "دارد" : "ندارد")
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="info-section">
+
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="info-item">
+                                    <span class="info-label">نام سازمان:</span>
+                                    <span class="info-value @(Model.Organization?.Name == null ? "empty" : "")">
+                                        @(Model.Organization?.Name ?? "ثبت نشده")
+                                    </span>
+                                </div>
+
+                                <div class="info-item">
+                                    <span class="info-label">نوع سازمان:</span>
+                                    <span class="info-value @(Model.Organization?.OrgType == null ? "empty" : "")">
+                                        @(Model.Organization?.OrgType ?? "ثبت نشده")
+                                    </span>
+                                </div>
+
+                                <div class="info-item">
+                                    <span class="info-label">کد سازمان:</span>
+                                    <span class="info-value @(string.IsNullOrEmpty(Model.Organization?.Code) ? "empty" : "")">
+                                        @(string.IsNullOrEmpty(Model.Organization?.Code) ? "ثبت نشده" : Model.Organization?.Code)
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="info-item">
+                                    <span class="info-label">تلفن سازمان:</span>
+                                    <span class="info-value @(string.IsNullOrEmpty(Model.Organization?.Phone) ? "empty" : "")">
+                                        @(string.IsNullOrEmpty(Model.Organization?.Phone) ? "ثبت نشده" : Model.Organization?.Phone)
+                                    </span>
+                                </div>
+
+                                <div class="info-item">
+                                    <span class="info-label">ایمیل سازمان:</span>
+                                    <span class="info-value @(string.IsNullOrEmpty(Model.Organization?.Email) ? "empty" : "")">
+                                        @(string.IsNullOrEmpty(Model.Organization?.Email) ? "ثبت نشده" : Model.Organization?.Email)
+                                    </span>
+                                </div>
+
+                                <div class="info-item">
+                                    <span class="info-label">آدرس سازمان:</span>
+                                    <span class="info-value @(string.IsNullOrEmpty(Model.Organization?.Address) ? "empty" : "")">
+                                        @(string.IsNullOrEmpty(Model.Organization?.Address) ? "ثبت نشده" : Model.Organization?.Address)
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrEmpty(Model.Emza))
+                    {
+                        <div class="row mt-3">
+                            <div class="col-md-12">
+                                <div class="info-item">
+                                    <span class="info-label">امضای فعلی:</span>
+                                    <div class="mt-2">
+                                        <img src="~/signatures/@Model.Emza" class="signature-preview" style="max-height: 100px; border: 1px dashed #ddd; padding: 5px; background: white;" />
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+                
+            </div>
+        </div>
+
+        <!-- بخش غیرفعال سازی حساب -->
+        <div class="profile-card">
+            <div class="profile-header" style="background: linear-gradient(135deg, #ea5455 0%, #f08182 100%);">
+                <h4 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>مدیریت حساب کاربری</h4>
+            </div>
+            <div class="profile-body">
+                <div class="alert alert-warning">
+                    <div class="alert-heading">
+                        <i class="fas fa-exclamation-circle me-2"></i>
+                        <strong>آیا از حذف حساب خود اطمینان دارید؟</strong>
+                    </div>
+                    <p class="mb-0 mt-2">در صورتی که حساب خود را حذف کنید، تمام اطلاعات شما به طور دائم پاک خواهد شد و امکان بازیابی وجود نخواهد داشت.</p>
+                </div>
+
+                <form asp-controller="Account" asp-action="AccountDeactive" method="post">
+                    <input type="hidden" asp-for="Id" />
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="accountActivation" id="accountActivation" required />
+                        <label class="form-check-label" for="accountActivation">
+                            من با آگاهی کامل، غیرفعال کردن حساب کاربری خود را تایید می‌کنم
+                        </label>
+                    </div>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-user-slash me-2"></i>غیرفعال کردن حساب
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section vendorjs {
+    <script src="~/assets/vendor/libs/moment/moment.js"></script>
+}
+
+@section PageJs {
+    <script src="~/assets/js/pages-account-settings-account.js"></script>
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}

@@ -1,0 +1,49 @@
+﻿@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model BE.LetterAutomation.LetterApproval
+
+<div class="card">
+    <div class="card-header bg-info">
+        <h3 class="card-title">اقدام بر روی نامه شماره @Model.Letter!.LetterNumber</h3>
+    </div>
+    <div class="card-body">
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <h5>مشخصات نامه</h5>
+                <p><strong>موضوع:</strong> @Model.Letter.Subject</p>
+                <p><strong>تاریخ ثبت:</strong> @Model.Letter.RegistrationDate</p>
+            </div>
+            <div class="col-md-6">
+                <h5>وضعیت فعلی</h5>
+                <p><strong>سطح تایید:</strong> @Model.ApprovalLevel</p>
+                <p><strong>تاریخ درخواست:</strong> @Model.RequestDate</p>
+            </div>
+        </div>
+
+        <form asp-action="Process" method="post">
+            <input type="hidden" name="approvalId" value="@Model.Id" />
+
+            <div class="form-group">
+                <label for="comment" class="control-label">توضیحات</label>
+                <textarea name="comment" class="form-control" rows="3"></textarea>
+            </div>
+
+            <div class="form-group text-center">
+                <button type="submit" name="action" value="approve" class="btn btn-success mx-2">
+                    <i class="fas fa-check"></i> تایید
+                </button>
+                <button type="submit" name="action" value="reject" class="btn btn-danger mx-2">
+                    <i class="fas fa-times"></i> رد
+                </button>
+                @if (Model.ApprovalLevel > 1)
+                {
+                    <button type="submit" name="action" value="return" class="btn btn-info mx-2">
+                        <i class="fas fa-undo"></i> بازگشت به سطح قبل
+                    </button>
+                }
+                <a asp-action="Details" asp-route-id="@Model.LetterId" class="btn btn-secondary mx-2">
+                    <i class="fas fa-arrow-left"></i> بازگشت
+                </a>
+            </div>
+        </form>
+    </div>
+</div>

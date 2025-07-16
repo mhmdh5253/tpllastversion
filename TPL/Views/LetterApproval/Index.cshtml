@@ -1,0 +1,67 @@
+﻿@using BE
+@using BE.LetterAutomation
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model IEnumerable<BE.LetterAutomation.LetterApproval>
+@inject UserManager<ApplicationUser> UserManager
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">درخواست‌های تایید نامه</h3>
+    </div>
+    <div class="card-body">
+        <table class="table table-bordered table-hover">
+            <thead>
+                <tr>
+                    <th>شماره نامه</th>
+                    <th>موضوع نامه</th>
+                    <th>درخواست کننده</th>
+                    <th>تاییدکننده</th>
+                    <th>سازمان</th>
+                    <th>وضعیت</th>
+                    <th>تاریخ درخواست</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    var requester = await UserManager.FindByIdAsync(item.RequesterUserId);
+                    var Approver = await UserManager.FindByIdAsync(item.ApproverUserId);
+                    <tr>
+                        <td>@item.Letter!.LetterNumber</td>
+                        <td>@item.Letter.Subject</td>
+                        <td>@requester?.FirstName @requester?.LastName</td>
+                         <td>@Approver?.FirstName @Approver?.LastName</td>
+                        <td>@item.Organization!.Name</td>
+                        <td>
+                            @switch (item.Status)
+                            {
+                                case ApprovalStatus.Pending:
+                                    <span class="badge badge-warning">در انتظار</span>
+                                    break;
+                                case ApprovalStatus.Approved:
+                                    <span class="badge badge-success">تایید شده</span>
+                                    break;
+                                case ApprovalStatus.Rejected:
+                                    <span class="badge badge-danger">رد شده</span>
+                                    break;
+                                case ApprovalStatus.Returned:
+                                    <span class="badge badge-info">بازگشت داده شده</span>
+                                    break;
+                            }
+                        </td>
+                        <td>@item.RequestDate</td>
+                        <td>
+                            <a asp-action="LetterView" asp-controller="Letter" asp-route-id="@item.LetterId" class="btn btn-sm btn-info">مشاهده</a>
+                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info">جزئیات پردازش</a>
+                            @if (item.Status == ApprovalStatus.Pending)
+                            {
+                                <a asp-action="Process" asp-route-id="@item.Id" class="btn btn-sm btn-primary">پردازش</a>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

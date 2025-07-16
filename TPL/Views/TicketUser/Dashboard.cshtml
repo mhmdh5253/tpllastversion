@@ -1,0 +1,94 @@
+﻿@using BE.Ticketing.SupportTicketSystem.Models
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model TPLWeb.Models.Ticketing.UserDashboardViewModel
+
+@{
+    ViewData["Title"] = "داشبورد کاربری";
+}
+<partial name="Admin/_ProfileParitial" />
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>تیکت‌های من</h5>
+                <a asp-action="CreateTicket" class="btn btn-sm btn-primary">تیکت جدید</a>
+            </div>
+            <div class="card-body">
+                @if (Model.MyTickets.Any())
+                {
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>عنوان</th>
+                                <th>وضعیت</th>
+                                <th>تاریخ</th>
+                                <th>عملیات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var ticket in Model.MyTickets)
+                            {
+                                <tr>
+                                    <td>@ticket.Title</td>
+                                    <td><span class="badge bg-@GetStatusBadge(ticket.Status)">@ticket.Status</span></td>
+                                    <td>@ticket.CreatedDate.ToString("yyyy/MM/dd")</td>
+                                    <td>
+                                        <a asp-action="ViewTicket" asp-route-id="@ticket.Id" class="btn btn-sm btn-info">مشاهده</a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <div class="alert alert-info">هنوز هیچ تیکتی ایجاد نکرده‌اید</div>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5>اعلان‌ها</h5>
+            </div>
+            <div class="card-body">
+                @if (Model.Notifications.Any())
+                {
+                    <div class="list-group">
+                        @foreach (var notification in Model.Notifications.Take(5))
+                        {
+                            <a href="@notification.Link" class="list-group-item list-group-item-action @(!notification.IsRead ? "fw-bold" : "")">
+                                <div class="d-flex justify-content-between">
+                                    <span>@notification.Message</span>
+                                    <small class="text-muted">@notification.CreatedDate.ToString("HH:mm")</small>
+                                </div>
+                            </a>
+                        }
+                    </div>
+                    <a href="#" class="btn btn-sm btn-link mt-2">مشاهده همه اعلان‌ها</a>
+                }
+                else
+                {
+                    <div class="alert alert-info">اعلانی وجود ندارد</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@functions {
+    string GetStatusBadge(TicketStatus status)
+    {
+        return status switch
+        {
+            TicketStatus.New => "secondary",
+            TicketStatus.Open => "primary",
+            TicketStatus.InProgress => "info",
+            TicketStatus.Resolved => "success",
+            TicketStatus.Closed => "dark",
+            _ => "secondary"
+        };
+    }
+}

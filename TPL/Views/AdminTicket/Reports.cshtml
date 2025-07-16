@@ -1,0 +1,110 @@
+﻿@{
+    ViewData["Title"] = "گزارش‌گیری";
+}
+<partial name="Admin/_ProfileParitial" />
+
+<div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0">@ViewData["Title"]</h5>
+            <div>
+                <a href="@Url.Action("Dashboard")" class="btn btn-sm btn-light">
+                    <i class="bi bi-arrow-right"></i> داشبورد
+                </a>
+                <a href="@Url.Action("ManageTickets")" class="btn btn-sm btn-light">
+                    <i class="bi bi-arrow-right"></i> مدیریت تیکت ها
+                </a>
+            </div>
+        </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="card mb-4">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0">گزارش وضعیت تیکت‌ها</h6>
+                    </div>
+                    <div class="row card-body">
+                        <form asp-action="GenerateStatusReport" method="post">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">از تاریخ <span class="text-danger">*</span></label>
+                                    <input type="date" name="startDate" class="form-control" required
+                                           max="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">تا تاریخ <span class="text-danger">*</span></label>
+                                    <input type="date" name="endDate" class="form-control" required
+                                           max="@DateTime.Now.ToString("yyyy-MM-dd")" />
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-bar-chart"></i> تولید گزارش
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6>تاریخچه گزارش‌های اخیر</h6>
+            </div>
+            <div class="card-body">
+                @if (ViewBag.RecentReports != null && ViewBag.RecentReports.Count > 0)
+                {
+                    <div class="list-group">
+                        @foreach (var report in ViewBag.RecentReports)
+                        {
+                            <a href="@Url.Action("ReportResult", new { id = report.Id })"
+                               class="list-group-item list-group-item-action">
+                                <div class="d-flex justify-content-between">
+                                    <span>@report.Title</span>
+                                    <small class="text-muted">@report.GeneratedDate.ToString("yyyy/MM/dd HH:mm")</small>
+                                </div>
+                                <small class="text-muted">@report.Description</small>
+                            </a>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <div class="alert alert-info text-center">
+                        هیچ گزارشی یافت نشد
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section pagecss {
+    <style>
+        .card {
+            border-radius: 10px;
+        }
+
+        .card-header {
+            border-radius: 10px 10px 0 0 !important;
+        }
+
+        .form-control {
+            border-radius: 5px;
+            padding: 8px 12px;
+        }
+
+        .btn {
+            border-radius: 5px;
+            padding: 8px 16px;
+        }
+
+        .list-group-item {
+            border-radius: 5px !important;
+            margin-bottom: 5px;
+        }
+
+            .list-group-item:hover {
+                background-color: #f8f9fa;
+            }
+    </style>
+}

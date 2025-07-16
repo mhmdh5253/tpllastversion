@@ -1,0 +1,171 @@
+﻿@model BE.LetterAutomation.OrganizationViewModel
+@{
+    ViewData["Title"] = "مدیریت سازمان‌ها و ادارات";
+}
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <div class="d-flex justify-content-between align-items-center ">
+                    <h3 class="card-title" style="color: white;">ساختار سازمانی</h3>
+                    <a asp-action="Create" class="btn btn-light btn-sm ">
+                        <i class="fas fa-plus"></i> سازمان جدید
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <input type="text" id="searchInput" class="form-control" placeholder="جستجوی سازمان..." />
+                        </div>
+                        <div id="orgTree" class="treeview">
+                            @await Html.PartialAsync("_OrganizationTree", Model.MainOrganizations)
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div id="orgDetail">
+                            <div class="alert alert-info">
+                                لطفاً یک سازمان از لیست سمت راست انتخاب کنید
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section pagecss {
+    <style>
+        .badge {
+            color: blue !important;
+        }
+
+        .treeview {
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 10px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .org-item {
+            padding: 8px;
+            margin: 3px 0;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+            .org-item:hover {
+                background-color: #f8f9fa;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            }
+
+            .org-item.active {
+                background-color: #e9ecef;
+                font-weight: bold;
+                border-left: 3px solid #007bff;
+            }
+
+        .org-children {
+            margin-right: 25px;
+            border-right: 2px dashed #dee2e6;
+            padding-right: 10px;
+        }
+
+        #orgDetail {
+            min-height: 400px;
+            transition: all 0.3s ease;
+        }
+
+        .org-actions {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .org-item:hover .org-actions {
+            opacity: 1;
+        }
+    </style>
+}
+
+@section pagejs {
+    <script>
+        $(document).ready(function() {
+            // مدیریت کلیک روی آیتم‌های سازمانی
+            $(document).on('click', '.org-item', function(e) {
+                // جلوگیری از انتشار رویداد به والدین
+                e.stopPropagation();
+
+                // اگر روی دکمه‌های عملیات کلیک شده بود، رویداد را پردازش نکن
+                if ($(e.target).closest('.org-actions').length > 0) {
+                    return;
+                }
+
+                // حذف حالت فعال از همه آیتم‌ها
+                $('.org-item').removeClass('active');
+
+                // اضافه کردن حالت فعال به آیتم جاری
+                $(this).addClass('active');
+
+                // دریافت ID سازمان
+                const orgId = $(this).data('id');
+
+                // نمایش اسپینر در حین بارگذاری
+                $('#orgDetail').html(`
+                    <div class="text-center py-4">
+                        <i class="fas fa-spinner fa-spin fa-2x text-primary"></i>
+                        <p class="mt-2">در حال بارگذاری اطلاعات سازمان...</p>
+                    </div>
+                `);
+
+                // دریافت اطلاعات سازمان از سرور
+                $.get(`/Organization/Details?id=${orgId}`)
+                    .done(function(data) {
+                        $('#orgDetail').html(data);
+                    })
+                    .fail(function() {
+                        $('#orgDetail').html(`
+                            <div class="alert alert-danger">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                خطا در بارگذاری اطلاعات سازمان
+                            </div>
+                        `);
+                    });
+            });
+
+            // جستجوی سازمان‌ها
+            $('#searchInput').on('input', function() {
+                const searchText = $(this).val().toLowerCase().trim();
+
+                if (searchText.length > 0) {
+                    $('.org-item').each(function() {
+                        const orgName = $(this).find('.org-name').text().toLowerCase();
+                        if (orgName.includes(searchText)) {
+                            $(this).show();
+                            $(this).parents('.org-children').show();
+                        } else {
+                            $(this).hide();
+                        }
+                    });
+                } else {
+                    $('.org-item').show();
+                    $('.org-children').show();
+                }
+            });
+
+            // انتخاب اولین سازمان به صورت خودکار
+            if ($('.org-item').length > 0) {
+                $('.org-item').first().trigger('click');
+            }
+        });
+    </script>
+}

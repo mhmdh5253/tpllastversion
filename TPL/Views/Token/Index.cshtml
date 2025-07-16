@@ -1,0 +1,90 @@
+﻿@using BE
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model IEnumerable<BE.Tokening.Token>
+@inject UserManager<ApplicationUser> UserManager
+@{
+    ViewData["Title"] = "مدیریت توکن‌ها";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+
+}
+<partial name="Admin/_ProfileParitial" />
+<div class="container mt-5">
+    <h2>@ViewData["Title"]</h2>
+
+    @if (TempData["SuccessMessage"] != null)
+    {
+        <div class="alert alert-success">@TempData["SuccessMessage"]</div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+        <div class="alert alert-danger">@TempData["ErrorMessage"]</div>
+    }
+
+    <div class="mb-3">
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="fas fa-plus"></i> ایجاد توکن جدید
+        </a>
+        <a asp-action="Validate" class="btn btn-secondary ms-2">
+            <i class="fas fa-check"></i> اعتبارسنجی توکن
+        </a>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-striped table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>شناسه</th>
+                    <th>کاربر</th>
+                    <th>توکن</th>
+                    <th>تاریخ ایجاد</th>
+                    <th>تاریخ انقضا</th>
+                    <th>وضعیت</th>
+                    <th>توضیحات</th>
+                    <th>عملیات</th>
+                </tr>
+            </thead>
+            <tbody>
+            @{
+                var u1 = UserManager.Users.FirstOrDefault(x => x.UserName == User.Identity!.Name);
+
+            }
+            @foreach (var token in Model)
+            {
+                <tr>
+                    <td>@token.Id</td>
+                    <td>@u1!.FirstName @u1.LastName</td>
+                    <td><code>@token.Value.Substring(0, 10)...</code></td>
+                    <td>@token.CreatedAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</td>
+                    <td>@token.ExpiresAt.ToLocalTime().ToString("yyyy/MM/dd HH:mm")</td>
+                    <td>
+                        @if (token.IsActive)
+                        {
+                            <span class="badge bg-success">فعال</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-danger">غیرفعال</span>
+                        }
+                    </td>
+                    <td>@token.Description</td>
+                    <td>
+                        <a asp-action="Details" asp-route-id="@token.Id" class="btn btn-sm btn-info">
+                            <i class="fas fa-eye"></i> مشاهده
+                        </a>
+                        @if (token.IsActive)
+                        {
+                            <form asp-action="Revoke" asp-route-id="@token.Id" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-sm btn-warning">
+                                    <i class="fas fa-ban"></i> ابطال
+                                </button>
+                            </form>
+                        }
+                    </td>
+                </tr>
+            }
+            </tbody>
+        </table>
+    </div>
+</div>

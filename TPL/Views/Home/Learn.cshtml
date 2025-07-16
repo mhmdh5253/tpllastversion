@@ -1,0 +1,239 @@
+﻿@{
+    ViewData["Title"] = "آموزش سامانه هدهد";
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+@section vendorcss
+{
+    <link rel="stylesheet" href="~/assets/vendor/libs/datatables-bs5/datatables.bootstrap5.css"/>
+    <link rel="stylesheet" href="~/assets/vendor/libs/datatables-responsive-bs5/responsive.bootstrap5.css"/>
+    <link rel="stylesheet" href="~/assets/vendor/libs/flatpickr/flatpickr.css"/>
+    <link rel="stylesheet" href="~/assets/vendor/libs/plyr/plyr.css"/>
+
+
+}
+
+@section pagecss
+{
+}
+
+<style>
+    [dir=rtl] .me-4 { margin-left: 1px !important; }
+</style>
+<!-- FormValidation -->
+<div class="col-12  ">
+    <div class="card">
+        <h5 class="card-header">آموزش سامانه هدهد</h5>
+        <div class="row">
+            <div class="accordion mt-3 accordion-header-primary" id="accordionWithIcon">
+                <div class="card accordion-item active">
+                    <h2 class="accordion-header d-flex align-items-center">
+                        <button type="button" class="accordion-button" data-bs-toggle="collapse" data-bs-target="#accordionWithIcon-1" aria-expanded="true">
+                            <i class="mdi mdi-newspaper me-2"></i>
+                            مدیریت اخبار
+                        </button>
+                    </h2>
+                    <div class="row" id="accordionWithIcon-1">
+                        <div class="accordion-collapse collapse show">
+                            <div class="accordion-body lh-2">
+                                <!-- Video Player -->
+                                <div class="col-12 mb-4">
+                                    <div class="card">
+                                        <h5 class="card-header">آموزش قسمت های سامانه به صورت کلی</h5>
+                                        <div class="card-body">
+                                            <video class="w-100 plyr-video-player" playsinline controls>
+                                                <source src="~/Learning/آموزش قسمت های سامانه به صورت کلی.mp4" type="video/mp4"/>
+                                            </video>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- /Video Player -->
+                            </div>
+                        </div>
+                        <div class="accordion-collapse collapse show">
+                            <div class="accordion-body lh-2">
+
+                                <!-- Video Player -->
+                                <div class="col-12 mb-4">
+                                    <div class="card">
+                                        <h5 class="card-header">آموزش ثبت خبر</h5>
+                                        <div class="card-body">
+                                            <video class="w-100 plyr-video-player" playsinline controls>
+                                                <source src="~/Learning/آموزش ثبت خبر.mp4" type="video/mp4"/>
+                                            </video>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- /Video Player -->
+                            </div>
+                        </div>
+                        <div class="accordion-collapse collapse show">
+                            <div class="accordion-body lh-2">
+
+                                <!-- Video Player -->
+                                <div class="col-12 mb-4">
+                                    <div class="card">
+                                        <h5 class="card-header">آموزش ثبت توکن.mp4</h5>
+                                        <div class="card-body">
+                                            <video class="w-100 plyr-video-player" playsinline controls>
+                                                <source src="~/Learning/آموزش ثبت توکن.mp4" type="video/mp4"/>
+                                            </video>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- /Video Player -->
+                            </div>
+                        </div>
+
+                        <div class="accordion-collapse collapse show">
+                            <div class="accordion-body lh-2">
+
+                                <!-- Video Player -->
+                                <div class="col-12 mb-4">
+                                    <div class="card">
+                                        <h5 class="card-header">آموزش جزئیات خبر-ویرایش-حذف</h5>
+                                        <div class="card-body">
+                                            <video class="w-100 plyr-video-player" playsinline controls>
+                                                <source src="~/Learning/آموزش جزئیات خبر-ویرایش-حذف.mp4" type="video/mp4"/>
+                                            </video>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- /Video Player -->
+                            </div>
+                        </div>
+                        <div class="accordion-collapse collapse show">
+                            <div class="accordion-body lh-2">
+
+                                <!-- Video Player -->
+                                <div class="col-12 mb-4">
+                                    <div class="card">
+                                        <h5 class="card-header">آموزش بولتن اخبار</h5>
+                                        <div class="card-body">
+                                            <video class="w-100 plyr-video-player" playsinline controls>
+                                                <source src="~/Learning/بولتن اخبار.mp4" type="video/mp4"/>
+                                            </video>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- /Video Player -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="accordion-item card">
+                    <h2 class="accordion-header d-flex align-items-center">
+                        <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionWithIcon-2" aria-expanded="false">
+                            <i class="mdi mdi-laptop me-2"></i>
+                            مدیریت رسانه
+                        </button>
+                    </h2>
+                    <div class="row" id="accordionWithIcon-2">
+                        <div class="accordion-collapse collapse show">
+                            <div class="accordion-body lh-2">
+                                <!-- Video Player -->
+                                <div class="col-12 mb-4">
+                                    <div class="card">
+                                        <h5 class="card-header">آموزش ثبت رسانه و شناسنامه</h5>
+                                        <div class="card-body">
+                                            <video class="w-100 plyr-video-player" playsinline controls>
+                                                <source src="~/Learning/آموزش ثبت رسانه و شناسنامه.mp4" type="video/mp4"/>
+                                            </video>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- /Video Player -->
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="accordion-item card">
+                    <h2 class="accordion-header d-flex align-items-center">
+                        <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionWithIcon-3" aria-expanded="false">
+                            <i class="menu-icon tf-icons tf-telegram mdi mdi-telegram">
+                                <img src="~/assets/img/icons/brands/telegram.png" alt="telegram" class="me-4" height="24">
+                            </i> آموزش تخلیه تلگرام
+                        </button>
+                    </h2>
+                    <div class="row" id="accordionWithIcon-3">
+                        <div class="accordion-collapse collapse show">
+                            <div class="accordion-body lh-2">
+                                <!-- Video Player -->
+                                <div class="col-12 mb-4">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <video class="w-100 plyr-video-player" playsinline controls>
+                                                <source src="~/Learning/آموزش تخلیه تلگرام.mp4" type="video/mp4"/>
+                                            </video>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- /Video Player -->
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <div class="accordion-item card">
+                    <h2 class="accordion-header d-flex align-items-center">
+                        <button type="button" class="accordion-button collapsed" data-bs-toggle="collapse" data-bs-target="#accordionWithIcon-4" aria-expanded="false">
+                            <i class="menu-icon tf-icons mdi mdi-instagram"></i>
+                            آموزش تخلیه اینستاگرام
+                        </button>
+                    </h2>
+                    <div class="row" id="accordionWithIcon-4">
+                        <div class="accordion-collapse collapse show">
+                            <div class="accordion-body lh-2">
+                                <!-- Video Player -->
+                                <div class="col-12 mb-4">
+                                    <div class="card">
+                                        <div class="card-body">
+                                            <video class="w-100 plyr-video-player" playsinline controls>
+                                                <source src="~/Learning/آموزش تخلیه اینستاگرام.mp4" type="video/mp4"/>
+                                            </video>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- /Video Player -->
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <!--/ Accordion with Icon -->
+    </div>
+</div>
+
+@section vendorjs
+{
+    <script src="~/assets/vendor/libs/datatables-bs5/datatables-bootstrap5.js"></script>
+    <!-- Flat Picker -->
+    <script src="~/assets/vendor/libs/moment/moment.js"></script>
+    <script src="~/assets/vendor/libs/jdate/jdate.js"></script>
+    <script src="~/assets/vendor/libs/flatpickr/flatpickr-jdate.js"></script>
+    <script src="~/assets/vendor/libs/flatpickr/fa-jdate.js"></script>
+    <script src="~/assets/vendor/libs/plyr/plyr.js"></script>
+
+}
+
+@section PageJs
+{
+    <script src="~/assets/js/tables-datatables-advanced.js"></script>
+    <script src="~/assets/js/extended-ui-media-player.js"></script>
+    <script>
+        const videoPlayer = new Plyr('.plyr-video-player');
+
+    </script>
+
+
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+
+}

@@ -1,0 +1,234 @@
+﻿@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model List<TPLWeb.Tools.ControllerActions>
+
+@{
+    string rolename = ViewBag.RoleName;
+    var roleClaims = ViewBag.RoleClaims as IList<System.Security.Claims.Claim>;
+}
+
+@section vendorcss {
+    <link rel="stylesheet" href="~/assets/vendor/libs/animate-css/animate.css" />
+     <link rel="stylesheet" href="~/assets/vendor/libs/perfect-scrollbar/perfect-scrollbar.css" />
+}
+
+@section pagecss {
+    <style>
+        .access-management-card {
+            border-radius: 15px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            border: none;
+            overflow: hidden;
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, #7367F0 0%, #A66FFE 100%);
+            color: white;
+            padding: 1.25rem 1.5rem;
+            border-bottom: none;
+        }
+
+        .controller-card {
+            border-radius: 10px;
+            border: 1px solid #e5e5e5;
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+
+        .controller-header {
+            background-color: #f8f9fa;
+            padding: 0.75rem 1.25rem;
+            border-bottom: 1px solid #e5e5e5;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+            .controller-header i {
+                margin-left: 0.5rem;
+                color: #7367F0;
+            }
+
+        .select-all-btn {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+        }
+
+        .action-item {
+            padding: 0.75rem 1.25rem;
+            border-bottom: 1px solid #f0f0f0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background-color 0.2s;
+        }
+
+            .action-item:hover {
+                background-color: #f9f9f9;
+            }
+
+        .action-name {
+            display: flex;
+            align-items: center;
+            flex-grow: 1;
+        }
+
+        .action-method {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            margin-left: 0.75rem;
+            font-weight: 600;
+            min-width: 60px;
+            text-align: center;
+        }
+
+        .method-get {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+
+        .method-post {
+            background-color: #e3f2fd;
+            color: #1565c0;
+        }
+
+        .method-put {
+            background-color: #fff8e1;
+            color: #ff8f00;
+        }
+
+        .method-delete {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+
+        .method-patch {
+            background-color: #f3e5f5;
+            color: #7b1fa2;
+        }
+
+        .method-other {
+            background-color: #e0e0e0;
+            color: #424242;
+        }
+
+        .switch-lg .form-check-input {
+            width: 3rem;
+            height: 1.5rem;
+        }
+
+        .submit-btn {
+            padding: 0.75rem 2rem;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+    </style>
+}
+
+<div class="row animate__animated animate__fadeIn">
+    <div class="col-12">
+        <div class="card access-management-card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-user-shield me-2"></i>
+                    مدیریت دسترسی نقش: @rolename
+                </h5>
+            </div>
+
+            <div class="card-body">
+                <form asp-action="AssignRoleAccess" asp-route-roleName="@rolename" method="post">
+                    @{
+                        int count = 0;
+                    }
+
+                    @foreach (var controller in Model)
+                    {
+                        <div class="controller-card">
+                            <div class="controller-header">
+                                <i class="fas fa-cubes"></i>
+                                کنترلر: @controller.ControllerName
+                            </div>
+
+                            <div class="controller-body p-0">
+                                @foreach (var action in controller.Actions!)
+                                {
+                                    var method = action.StartsWith("Get") ? "GET" :
+                                    action.StartsWith("Post") ? "POST" :
+                                    action.StartsWith("Put") ? "PUT" :
+                                    action.StartsWith("Delete") ? "DELETE" : "OTHER";
+
+                                    <div class="action-item">
+                                        <div class="action-name">
+                                            <span class="text-muted">اکشن:</span>
+                                            <strong class="mx-2">@action</strong>
+
+                                            <span class="action-method method-@method.ToLower()">
+                                                @method
+                                            </span>
+                                        </div>
+
+                                        <div class="form-check form-switch switch-lg">
+                                            <input type="hidden" name="controllerActions[@count].ControllerName" value="@controller.ControllerName" />
+                                            <input class="form-check-input"
+                                                   type="checkbox"
+                                                   role="switch"
+                                                   name="controllerActions[@count].Actions"
+                                                   value="@action"
+                                                   id="perm-@count"
+                                                   @(roleClaims!.Any(c => c.Type == "Permission" && c.Value == $"{controller.ControllerName}:{action}") ? "checked" : "") />
+                                            <label class="form-check-label" for="perm-@count"></label>
+                                        </div>
+                                    </div>
+                                    count++;
+                                }
+                            </div>
+                        </div>
+                    }
+
+                    <div class="text-center mt-4">
+                        <button type="submit" class="btn btn-primary submit-btn">
+                            <i class="fas fa-save me-2"></i>
+                            بروزرسانی دسترسی‌ها
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section vendorjs {
+}
+
+@section PageJs {
+    <script>
+        $(document).ready(function() {
+            // Initialize switches
+            $('.form-switch input[type="checkbox"]').bootstrapSwitch({
+                onText: 'فعال',
+                offText: 'غیرفعال',
+                onColor: 'success',
+                offColor: 'danger',
+                size: 'large'
+            });
+
+            // Select all functionality
+            $('.select-all-btn').click(function() {
+                const controllerCard = $(this).closest('.controller-card');
+                const controllerName = controllerCard.data('controller');
+                const switches = controllerCard.find('.permission-switch');
+                const anyUnchecked = switches.filter(':not(:checked)').length > 0;
+
+                switches.bootstrapSwitch('state', anyUnchecked);
+            });
+
+            // Form submission handling
+            $('form').on('submit', function() {
+                $('.submit-btn').prop('disabled', true);
+                $('.submit-btn').html('<span class="spinner-border spinner-border-sm me-2" role="status"></span>در حال ذخیره...');
+            });
+        });
+    </script>
+}

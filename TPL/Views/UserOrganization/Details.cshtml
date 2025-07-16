@@ -1,0 +1,122 @@
+﻿@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model BE.LetterAutomation.UserOrganization
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">جزئیات رابطه کاربر با سازمان</h3>
+        <div class="card-tools">
+            <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning btn-sm">
+                <i class="fas fa-edit"></i> ویرایش
+            </a>
+            <a asp-action="Index" class="btn btn-secondary btn-sm">
+                <i class="fas fa-arrow-left"></i> بازگشت به لیست
+            </a>
+        </div>
+    </div>
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-3">@Html.DisplayNameFor(model => model.User)</dt>
+            <dd class="col-sm-9">
+                @if (Model.User != null)
+                {
+                    <span>@Model.User.FirstName @Model.User.LastName</span>
+                    <small class="text-muted">(@Model.User.UserName)</small>
+                }
+                else
+                {
+                    <span class="text-danger">کاربر حذف شده است</span>
+                }
+            </dd>
+
+            <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Organization)</dt>
+            <dd class="col-sm-9">
+                @if (Model.Organization != null)
+                {
+                    <span>@Model.Organization.Name</span>
+                    @if (!string.IsNullOrEmpty(Model.Organization.Code))
+                    {
+                        <small class="text-muted">(کد: @Model.Organization.Code)</small>
+                    }
+                }
+                else
+                {
+                    <span class="text-danger">سازمان حذف شده است</span>
+                }
+            </dd>
+
+            <dt class="col-sm-3">@Html.DisplayNameFor(model => model.Position)</dt>
+            <dd class="col-sm-9">@Html.DisplayFor(model => model.Position)</dd>
+
+            <dt class="col-sm-3">وضعیت</dt>
+            <dd class="col-sm-9">
+                @if (Model.IsActive)
+                {
+                    <span class="badge badge-success">فعال</span>
+                }
+                else
+                {
+                    <span class="badge badge-danger">غیرفعال</span>
+                }
+            </dd>
+
+            <dt class="col-sm-3">سمت سازمانی</dt>
+            <dd class="col-sm-9">
+                @if (Model.IsHead)
+                {
+                    <span class="badge badge-primary">مسئول بخش</span>
+                }
+                else if (Model.IsDeputy)
+                {
+                    <span class="badge badge-info">جانشین</span>
+                }
+                else
+                {
+                    <span class="badge badge-secondary">کارمند</span>
+                }
+            </dd>
+
+            <dt class="col-sm-3">@Html.DisplayNameFor(model => model.StartDate)</dt>
+            <dd class="col-sm-9">@Model.StartDate</dd>
+
+            <dt class="col-sm-3">@Html.DisplayNameFor(model => model.EndDate)</dt>
+            <dd class="col-sm-9">
+                @if (Model.EndDate.HasValue)
+                {
+                    @Model.EndDate.Value
+                }
+                else
+                {
+                    <span class="text-muted">-</span>
+                }
+            </dd>
+        </dl>
+
+        <div class="mt-4">
+            <h5>اطلاعات اضافی</h5>
+            <hr />
+            @if (Model.User != null)
+            {
+                <div class="row">
+                    <div class="col-md-6">
+                        <p><strong>ایمیل کاربر:</strong> @Model.User.Email</p>
+                        <p><strong>تلفن کاربر:</strong> @Model.User.PhoneNumber</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>نوع حساب:</strong> @Model.User.AccountType</p>
+                        <p>
+                            <strong>حق امضا:</strong>
+                            @if (Model.User.HaqEmza)
+                            {
+                                <span class="badge badge-success">دارد</span>
+                            }
+                            else
+                            {
+                                <span class="badge badge-secondary">ندارد</span>
+                            }
+                        </p>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>

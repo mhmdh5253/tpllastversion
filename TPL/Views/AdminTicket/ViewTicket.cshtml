@@ -1,0 +1,118 @@
+﻿@using BE
+@using BE.Ticketing.SupportTicketSystem.Models
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Mvc.TagHelpers
+@model TPLWeb.Models.Ticketing.TicketViewModel
+@inject UserManager<ApplicationUser> UserManager
+@{
+    ViewData["Title"] = Model.Ticket!.Title;
+}
+<partial name="Admin/_ProfileParitial" />
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>@Model.Ticket.Title</h5>
+        <span class="badge bg-@GetStatusBadge(Model.Ticket.Status)">@Model.Ticket.Status</span>
+    </div>
+    <div class="card-body">
+        <p>@Model.Ticket.Description</p>
+        <hr />
+        <div class="d-flex justify-content-between text-muted">
+            <small>تاریخ ایجاد: @Model.Ticket.CreatedDate.ToString("yyyy/MM/dd HH:mm")</small>
+            <small>آخرین بروزرسانی: @Model.Ticket.UpdatedDate.ToString("yyyy/MM/dd HH:mm")</small>
+        </div>
+    </div>
+</div>
+
+<div class="card mb-4">
+    <div class="card-header">
+        <h5>پیوست‌ها</h5>
+    </div>
+    <div class="card-body">
+        @if (Model.Attachments.Any())
+        {
+            <ul class="list-group">
+                @foreach (var attachment in Model.Attachments)
+                {
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <a href="@attachment.FilePath" target="_blank">@attachment.FileName</a>
+                        <span class="badge bg-secondary">@FormatFileSize(attachment.FileSize)</span>
+                    </li>
+                }
+            </ul>
+        }
+        else
+        {
+            <div class="alert alert-info">پیوستی وجود ندارد</div>
+        }
+
+        <form asp-action="UploadAttachment" asp-controller="TicketUser" method="post" enctype="multipart/form-data" class="mt-3">
+            <input type="hidden" name="ticketId" value="@Model.Ticket.Id" />
+            <div class="mb-3">
+                <label class="form-label">افزودن پیوست</label>
+                <input type="file" name="file" class="form-control" required />
+            </div>
+            <button type="submit" class="btn btn-primary">آپلود</button>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h5>نظرات</h5>
+    </div>
+    <div class="card-body">
+        @{
+
+        }
+        @foreach (var comment in Model.Comments!)
+        {
+            var us = UserManager.Users.FirstOrDefault(x => x.Id == comment.CreatedByUserId);
+            <div class="card mb-3">
+                <div class="card-body">
+                    <p>@comment.Content</p>
+                    <div class="d-flex justify-content-between text-muted">
+                        <small>@us!.FirstName @us.LastName </small>
+                        <small>@comment.CreatedDate.ToString("yyyy/MM/dd HH:mm")</small>
+                    </div>
+                </div>
+            </div>
+        }
+
+        <form asp-action="AddComment" asp-controller="TicketUser" method="post" class="mt-3">
+            <input type="hidden" name="TicketId" value="@Model.Ticket.Id" />
+            <div class="mb-3">
+                <label class="form-label">افزودن نظر</label>
+                <textarea name="Content" class="form-control" rows="3" required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">ارسال نظر</button>
+        </form>
+    </div>
+</div>
+
+@functions {
+    string GetStatusBadge(TicketStatus status)
+    {
+        return status switch
+        {
+            TicketStatus.New => "secondary",
+            TicketStatus.Open => "primary",
+            TicketStatus.InProgress => "info",
+            TicketStatus.Resolved => "success",
+            TicketStatus.Closed => "dark",
+            _ => "secondary"
+        };
+    }
+
+    string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB" };
+        int order = 0;
+        while (bytes >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            bytes /= 1024;
+        }
+        return $"{bytes:0.##} {sizes[order]}";
+    }
+}

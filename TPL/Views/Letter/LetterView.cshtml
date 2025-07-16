@@ -1,0 +1,1739 @@
+﻿@using System.Text.RegularExpressions
+@using BE
+@using BE.LetterAutomation
+@using BLL.LetterAutomation
+@using Microsoft.AspNetCore.Identity
+@inject BlRecivers BlRecivers
+@inject UserManager<ApplicationUser> UserManager
+@model Letter
+@{
+    string content = Model.Content ?? "";
+    var signer = await UserManager.FindByNameAsync(Model.SignerUserName);
+    var creator = await UserManager.FindByNameAsync(User.Identity!.Name);
+    var currentUser = await UserManager.GetUserAsync(User);
+    Layout = "~/Views/Shared/_LayoutAdmin.cshtml";
+}
+
+@section pagecss {
+    <link href="~/modified/letterview.css" rel="stylesheet" />
+    <link href="~/assets/vendor/libs/sweetalert2/sweetalert2.css" rel="stylesheet">
+}
+
+<div class="container-fluid">
+    <div class="letter-system-container">
+        <!-- نامه در وسط -->
+        <div class="letter-wrapper">
+            <!-- محتوای نامه (بدون تغییر) -->
+            <header class="official-header">
+                <div>
+                    <img src="~/assets/img/branding/logo.png" alt="لوگوی شرکت" class="company-logo">
+                </div>
+                <div class="company-title">
+                    <h1>شرکت شیلنگ های مسلح قم</h1>
+                    <p>سامانه مکاتبات اداری</p>
+                </div>
+                <div>
+                    <img src="~/assets/img/branding/rohamlastic.png" alt="لوگوی شرکت" class="company-logo">
+                </div>
+            </header>
+
+            <div class="letter-content-container">
+                <div class="letter-meta-container">
+                    <div class="letter-meta-right">
+                        <p><strong>فرستنده:</strong>@await BlRecivers.GetReceiverFullPath(Model.Sender)</p>
+                        <p><strong>گیرنده:</strong> @await BlRecivers.GetReceiverFullPath(Model.Receiver)</p>
+                    </div>
+                    <div class="letter-meta-left">
+                        <div><strong>تاریخ:</strong> @Model.RegistrationDate.ToString("yyyy/MM/dd")</div>
+                        <div><strong>اولویت:</strong> @Model.Priority</div>
+                        <div><strong>محرمانگی:</strong> @Model.Classification</div>
+                        <div><strong>شماره:</strong> @Model.LetterNumber</div>
+                    </div>
+                </div>
+
+                <div class="letter-subject-container">
+                    <div class="letter-subject-right">
+                        <h2>موضوع: @Model.Subject</h2>
+                    </div>
+                </div>
+
+                <div class="content-frame">
+                    @Html.Raw(content)
+                </div>
+
+                <div class="letter-signature">
+                    <div class="signature-box">
+                        <p class="signer-name">@Model.SignerName</p>
+                        <p class="signer-position">@Model.SignerPosition</p>
+                        <div class="signature-image">
+                            @if (signer != null && Model.Status == LetterStatus.Approved)
+                            {
+                                <img src="~/signatures/@signer!.Emza" alt="امضا" width="120">
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <footer class="official-footer">
+                <div class="company-info">
+                    <p>قم، کیلومتر ۸ جاده قدیم کاشان، شرکت شیلنگ‌های مسلح قم</p>
+                    <p dir="rtl">تلفن: 02537224927 | فکس: 02537749191 | ایمیل: info@tpl-hose.ir</p>
+                </div>
+            </footer>
+        </div>
+
+        <!-- پنل مدیریت در سمت راست -->
+        <div class="panel-wrapper" style="order: 3;">
+            <div class="modern-panel">
+                <h3 class="panel-title">
+                    <i class="fas fa-tasks"></i> مدیریت نامه
+                </h3>
+                <div class="action-buttons-vertical">
+                    @switch (Model.Status)
+                    {
+                        case LetterStatus.Pending:
+                        case LetterStatus.Referred:
+                            <!-- وضعیت: در انتظار بررسی یا ارجاع شده -->
+                            @if (currentUser!.HaqEmza || currentUser.Semat == Model.SignerName)
+                            {
+                                <button class="action-btn approve-btn" onclick="startApprovalProcess(@Model.Id)">
+                                    <i class="fas fa-file-signature"></i> تایید و امضا
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="action-btn command-btn" onclick="startApprovalProcess(@Model.Id)">
+                                    <i class="fas fa-check-double"></i> تایید
+                                </button>
+                            }
+
+                            @if (!creator!.HaqEmza)
+                            {
+                                <button class="action-btn reject-btn" onclick="rejectLetter(@Model.Id)">
+                                    <i class="fas fa-times-circle"></i> رد نامه
+                                </button>
+                            }
+                            break;
+
+                        case LetterStatus.Approved:
+                            <!-- وضعیت: تایید شده -->
+                            <button class="action-btn btn-info" onclick="showReferralModal(@Model.Id)">
+                                <i class="fas fa-share-square"></i> ارجاع نامه
+                            </button>
+                            <button class="action-btn refer-btn" onclick="showMultiReferralModal(@Model.Id)">
+                                <i class="fas fa-share-square"></i> ارجاع نامه دسته جمعی
+                            </button>
+                            break;
+
+                        default:
+                            <!-- سایر وضعیت‌ها -->
+                            break;
+                    }
+
+                    <!-- اقدامات عمومی که در بیشتر وضعیت‌ها قابل دسترس هستند -->
+                    @if (Model.Status != LetterStatus.Archived && Model.Status != LetterStatus.Deleted)
+                    {
+                        @if (Model.Status != LetterStatus.Pending)
+                        {
+                            <button class="action-btn btn-primary" onclick="addLetterAction(@Model.Id,'@Model.LetterNumber')">
+                                <i class="fas fa-play-circle"></i> اقدام
+                            </button>
+                            <button class="action-btn btn-primary" onclick="loadLetterActions(@Model.Id,'@Model.LetterNumber')">
+                                <i class="fas fa-play-circle"></i> لیست اقدامات
+                            </button>
+
+                            @if (Model.Status != LetterStatus.Approved && Model.Status != LetterStatus.Archived)
+                            {
+                                <button class="action-btn return-btn" onclick="returnLetter(@Model.Id)">
+                                    <i class="fas fa-undo-alt"></i> عودت
+                                </button>
+                            }
+
+                            <a class="action-btn reply-btn" href="@Url.Action("AnswerLetter", "Letter")?letterid=@Model.Id">
+                                <i class="fas fa-reply-all"></i> پاسخ
+                            </a>
+                            <a class="action-btn track-btn" href="@Url.Action("Followup", "Letter")?letterid=@Model.Id">
+                                <i class="fas fa-search-plus"></i> پیگیری
+                            </a>
+                        }
+
+                        @if (Model.Status != LetterStatus.Archived)
+                        {
+                            <button class="action-btn archive-btn" onclick="archiveLetter(@Model.Id)">
+                                <i class="fas fa-archive"></i> بایگانی
+                            </button>
+                            <button class="action-btn quick-archive-btn" onclick="quickArchive(@Model.Id)">
+                                <i class="fas fa-inbox"></i> بایگانی سریع
+                            </button>
+                        }
+                    }
+
+                    <!-- اقدامات مربوط به حذف -->
+                    @if (Model.Status != LetterStatus.Archived && Model.Status != LetterStatus.Approved &&
+                                        Model.Status != LetterStatus.Deleted &&
+                                        (creator!.HaqEmza || currentUser!.UserName == Model.SignerUserName))
+                    {
+                        <button type="submit" class="action-btn btn-danger" onclick="deleteLetter(@Model.Id,'@Model.LetterNumber')">
+                            <i class="fas fa-recycle"></i> حذف نامه
+                        </button>
+                    }
+
+                    <!-- ابزارهای عمومی -->
+                    <a href="#" onclick="generateWordFile(@Model.Id, event)"
+                       class="action-btn word-btn btn-sm btn-outline-blue waves-effect"
+                       data-bs-toggle="tooltip"
+                       title="تولید و دانلود فایل ورد">
+                        <i class="fas fa-file-word"></i>
+                        تولید فایل ورد
+                    </a>
+                    <a href="#" onclick="generatePdfFile(@Model.Id, event)"
+                       class="action-btn pdf-btn btn-sm btn-outline-danger waves-effect"
+                       data-bs-toggle="tooltip"
+                       title="دانلود PDF">
+                        <i class="fas fa-file-pdf"></i>
+                        تولید فایل PDF
+                    </a>
+
+                    <a href="@Url.Action("KartableVaredeh", "Letter")" class="action-btn list-btn">
+                        <i class="fas fa-list-ol"></i> لیست نامه ها
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal برای اقدامات -->
+<div class="modal fade" id="actionModal" tabindex="-1" role="dialog" aria-labelledby="actionModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="actionModalLabel">انجام عملیات</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div id="modalContent">
+                    <!-- محتوای داینامیک -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">انصراف</button>
+                <button type="button" class="btn btn-primary" id="confirmAction">تایید</button>
+            </div>
+        </div>
+    </div>
+</div>
+@section pagejs {
+    <script src="~/assets/vendor/libs/sweetalert2/sweetalert2.js"></script>
+    <script src="~/modified/letterviewjs.js"></script>
+    <script>
+        async function generatePdfFile(id, event) {
+                event.preventDefault();
+    
+                const btn = event.target.closest('a');
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> در حال تولید...';
+                btn.classList.add('disabled');
+    
+                try {
+                        const response = await fetch(`@Url.Action("LetterGenerate","Letter")?id=${id}`);
+        
+                        if (!response.ok) {
+                                throw new Error(await response.text());
+                            }
+        
+                        const data = await response.json();
+                        const fileId = data.fileId;
+        
+                        // بررسی وجود فایل قبل از دانلود
+                        const fileCheck = await fetch(`/wordfiles/${fileId}.pdf`, { method: 'HEAD' });
+                        if (!fileCheck.ok) {
+                                throw new Error('فایل تولید شده یافت نشد');
+                            }
+        
+                        // دانلود خودکار
+                        const a = document.createElement('a');
+                        a.href = `/wordfiles/${fileId}.pdf`;
+                        a.download = `نامه_${fileId}_${new Date().toLocaleDateString('fa-IR')}.pdf`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+        
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('خطا در تولید فایل: ' + error.message);
+                    } finally {
+                        btn.innerHTML = originalHtml;
+                        btn.classList.remove('disabled');
+                    }
+            }    </script>
+    <script>
+        async function generateWordFile(id, event) {
+                event.preventDefault();
+    
+                const btn = event.target.closest('a');
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> در حال تولید...';
+                btn.classList.add('disabled');
+    
+                try {
+                        const response = await fetch(`@Url.Action("LetterGenerate","Letter")?id=${id}`);
+        
+                        if (!response.ok) {
+                                throw new Error(await response.text());
+                            }
+        
+                        const data = await response.json();
+                        const fileId = data.fileId;
+        
+                        // بررسی وجود فایل قبل از دانلود
+                        const fileCheck = await fetch(`/wordfiles/${fileId}.docx`, { method: 'HEAD' });
+                        if (!fileCheck.ok) {
+                                throw new Error('فایل تولید شده یافت نشد');
+                            }
+        
+                        // دانلود خودکار
+                        const a = document.createElement('a');
+                        a.href = `/wordfiles/${fileId}.docx`;
+                        a.download = `نامه_${fileId}_${new Date().toLocaleDateString('fa-IR')}.docx`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+        
+                    } catch (error) {
+                        console.error('Error:', error);
+                        alert('خطا در تولید فایل: ' + error.message);
+                    } finally {
+                        btn.innerHTML = originalHtml;
+                        btn.classList.remove('disabled');
+                    }
+            }    </script>
+    <script>
+        async function sendRequestWithCredentials(url, method, data) {
+            const response = await fetch(url,
+                {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'RequestVerificationToken': document.querySelector('input[name="__RequestVerificationToken"]')?.value
+                    },
+                    body: method !== 'GET' ? JSON.stringify(data) : null,
+                    credentials: 'include'
+                });
+
+            // پردازش پاسخ‌های JSON (چه موفق چه ناموفق)
+            const result = await response.json().catch(() => null);
+
+            if (!response.ok) {
+                // ایجاد یک خطای جدید با اطلاعات کامل پاسخ سرور
+                const error = new Error(result?.message || `HTTP error! status: ${response.status}`);
+                error.response = response;
+                error.data = result;
+                throw error;
+            }
+
+            return result;
+        }
+
+    </script>
+    <script>
+
+        async function startApprovalProcess(letterId) {
+            try {
+                // نمایش دیالوگ تأیید
+                const confirmResult = await Swal.fire({
+                    title: 'آیا مطمئن هستید؟',
+                    text: 'آیا می‌خواهید فرآیند تأیید این نامه را آغاز کنید؟',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'بله، ارسال شود',
+                    cancelButtonText: 'انصراف',
+                    customClass: {
+                        confirmButton: 'btn btn-success',
+                        cancelButton: 'btn btn-danger'
+                    },
+                    buttonsStyling: false
+                });
+
+                if (!confirmResult.isConfirmed) return;
+
+                // نمایش loader
+                Swal.fire({
+                    title: 'لطفا منتظر بمانید...',
+                    html: 'در حال آغاز فرآیند تأیید',
+                    allowOutsideClick: false,
+                    didOpen: () => Swal.showLoading()
+                });
+
+                // ارسال درخواست
+                const result = await sendRequestWithCredentials(
+                    "@Url.Action("StartApprovalProcess", "LetterApprovalFlow")",
+                    "POST",
+                    letterId
+                );
+
+                // موفقیت‌آمیز
+                Swal.close();
+                await Swal.fire({
+                    title: '✅ موفقیت‌آمیز',
+                    text: result.message || 'فرآیند تأیید با موفقیت آغاز شد',
+                    icon: 'success',
+                    confirmButtonText: 'متوجه شدم',
+                    timer: 3000,
+                    timerProgressBar: true
+                });
+
+                // رفرش صفحه
+                setTimeout(() => location.reload(), 1000);
+
+            } catch (error) {
+                Swal.close();
+
+                // تعیین پیام خطا
+                let errorMessage = 'خطا در ارتباط با سرور';
+                if (error.data) {
+                    errorMessage = error.data.message || error.message;
+                } else if (error.message) {
+                    errorMessage = error.message;
+                }
+
+                // نمایش خطا
+                await Swal.fire({
+                    title: '❌ خطا',
+                    text: errorMessage,
+                    icon: 'error',
+                    confirmButtonText: 'متوجه شدم'
+                });
+
+                console.error('جزئیات خطا:', error);
+            }
+        }
+
+        async function finalApprove(letterId) {
+            try {
+                const comment = prompt('لطفا توضیحات تایید را وارد کنید:', 'تایید شد');
+                if (comment === null) return;
+
+                const result = await sendRequestWithCredentials(`@Url.Action("Approve", "LetterApprovalFlow")`,
+                    'POST',
+                    {
+                        approvalId: letterId,
+                        comment: comment
+                    }
+                );
+
+                if (result.success) {
+                    await Swal.fire({
+                        title: 'نتیجه درخواست',
+                        text: result.message,
+                        icon: 'information',
+                        confirmButtonText: 'متوجه شدم',
+                        timer: 3000,
+                        timerProgressBar: true
+                    });
+                    location.reload();
+                } else {
+                    await Swal.fire({
+                        title: 'نتیجه درخواستخطا',
+                        text: result.message || 'عملیات ناموفق بود',
+                        icon: 'information',
+                        confirmButtonText: 'متوجه شدم',
+                        timer: 3000,
+                        timerProgressBar: true
+                    });
+                }
+            } catch (error) {
+                console.error('Error in finalApprove:', error);
+                alert('خطا در ارتباط با سرور');
+            }
+        }
+
+    </script>
+    <script>
+        async function showReferralModal(letterId) {
+            try {
+                // دریافت ساختار سازمانی
+                const response = await fetch('@Url.Action("GetOrganizationStructure", "LetterApprovalFlow")');
+                const result = await response.json();
+
+                if (!result.Success) {
+                    throw new Error('خطا در دریافت ساختار سازمانی');
+                }
+
+                // ایجاد HTML برای نمایش درختی
+                const treeHtml = generateTreeHtml(result.Data, 0);
+
+                // نمایش مدال
+                const { value: formValues } = await Swal.fire({
+                    title: 'ارجاع نامه',
+                    html: `
+                <div id="orgTree" style="max-height: 400px; overflow-y: auto; margin-bottom: 15px;">
+                    ${treeHtml}
+                </div>
+                <textarea id="referralComment" class="swal2-textarea" placeholder="توضیحات ارجاع"></textarea>
+            `,
+                    focusConfirm: false,
+                    showCancelButton: true,
+                    confirmButtonText: 'ارجاع',
+                    cancelButtonText: 'انصراف',
+                    preConfirm: () => {
+                        const selectedUser = document.querySelector('input[name="selectedUser"]:checked');
+                        if (!selectedUser) {
+                            Swal.showValidationMessage('لطفاً گیرنده را انتخاب کنید');
+                            return false;
+                        }
+                        return {
+                            receiverId: selectedUser.value,
+                            comment: document.getElementById('referralComment').value
+                        };
+                    }
+                });
+
+                if (formValues) {
+                    // ارسال درخواست ارجاع
+                    const referralResponse = await fetch('@Url.Action("ReferLetter", "LetterApprovalFlow")',
+                        {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                LetterId: letterId,
+                                ReceiverUserId: formValues.receiverId,
+                                Comment: formValues.comment
+                            })
+                        });
+
+                    const referralResult = await referralResponse.json();
+
+                    if (referralResult.Success) {
+                        Swal.fire({
+                            title: 'موفقیت',
+                            text: referralResult.Message,
+                            icon: 'success'
+                        });
+                    } else {
+                        Swal.fire({
+                            title: 'خطا',
+                            text: referralResult.Message,
+                            icon: 'error'
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error in referral:', error);
+                Swal.fire({
+                    title: 'خطا',
+                    text: 'خطا در پردازش ارجاع',
+                    icon: 'error'
+                });
+            }
+        }
+
+        function generateTreeHtml(node, level = 0) {
+            const isRoot = level === 0;
+
+            let html = `
+        <div style="
+            margin-left: ${level * 24}px;
+            ${!isRoot ? 'border-left: 2px dashed rgba(0, 150, 255, 0.3);' : ''}
+            padding-left: ${isRoot ? '0' : '16px'};
+            transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+        ">
+            <div style="
+                font-weight: 700;
+                font-size: ${isRoot ? '1.1em' : '1em'};
+                color: ${isRoot ? '#2c3e50' : '#34495e'};
+                background: ${isRoot ? 'linear-gradient(90deg, rgba(0,150,255,0.1) 0%, transparent 100%)' : 'transparent'};
+                padding: 8px 12px;
+                border-radius: 6px;
+                margin: 6px 0;
+                display: inline-block;
+                box-shadow: ${isRoot ? '0 2px 8px rgba(0,0,0,0.08)' : 'none'};
+            ">
+                📌 ${node.Name}
+            </div>
+    `;
+
+            // کاربران واحد
+            if (node.Users?.length > 0) {
+                html += `
+            <div style="
+                margin-left: 12px;
+                border-radius: 8px;
+                background: rgba(245, 245, 245, 0.5);
+                padding: 8px;
+                backdrop-filter: blur(2px);
+            ">
+        `;
+
+                node.Users.forEach(user => {
+                    const headBadge = user.IsHead
+                        ? `
+                <span style="
+                    display: inline-block;
+                    background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+                    color: white;
+                    font-size: 0.75em;
+                    padding: 2px 8px;
+                    border-radius: 10px;
+                    margin-right: 8px;
+                    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                ">
+                    مسئول
+                </span>
+            `
+                        : '';
+
+                    html += `
+                <div style="
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    padding: 6px 12px;
+                    margin: 4px 0;
+                    background: white;
+                    border-radius: 6px;
+                    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+                    transition: transform 0.2s, box-shadow 0.2s;
+                " onmouseover="this.style.transform='translateX(4px)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.1)'" 
+                   onmouseout="this.style.transform=''; this.style.boxShadow='0 1px 2px rgba(0,0,0,0.05)'">
+                    <label style="
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        cursor: pointer;
+                        flex-grow: 1;
+                    ">
+                        <input type="radio" 
+                               name="selectedUser" 
+                               value="${user.Id}"
+                               style="accent-color: #0096ff; transform: scale(1.1);">
+                        <span style="font-weight: 500;">${user.Name}</span>
+                        <span style="color: #7f8c8d; font-size: 0.9em;">${user.Position}</span>
+                    </label>
+                    ${headBadge}
+                </div>
+            `;
+                });
+
+                html += `</div>`;
+            }
+
+            // واحدهای فرزند
+            if (node.Children?.length > 0) {
+                node.Children.forEach(child => {
+                    html += generateTreeHtml(child, level + 1);
+                });
+            }
+
+            html += `</div>`;
+            return html;
+        }
+
+    </script>
+    <script>
+
+        async function showMultiReferralModal(letterId) {
+            try {
+
+                const response = await fetch('@Url.Action("GetOrganizationUsers", "LetterApprovalFlow")');
+                const result = await response.json();
+
+
+                if (!result.Success) {
+                    throw new Error('خطا در دریافت لیست کاربران');
+                }
+
+                // ساختار HTML زیبا و منظم
+                let usersHtml = `
+        <div class="referral-modal-container">
+            <div class="referral-header">
+                <div class="header-title">
+                    <i class="icon">📤</i>
+                    <h3>ارجاع گروهی نامه</h3>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="userSearch" placeholder="جستجو کاربران...">
+                    <i class="search-icon">🔍</i>
+                </div>
+            </div>
+
+            <div class="referral-body">
+                <div class="common-comment-box">
+                    <label class="input-label">
+                        <i class="icon">📢</i>
+                        پیام عمومی (برای همه گیرندگان)
+                    </label>
+                    <textarea id="commonComment" placeholder="متن پیام عمومی..."></textarea>
+                    <div class="char-counter">0/500</div>
+                </div>
+
+                <div class="users-list-container">
+                    <div class="list-header">
+                        <div class="select-all">
+                            <input type="checkbox" id="selectAllUsers">
+                            <label for="selectAllUsers">انتخاب همه</label>
+                        </div>
+                        <div class="selected-count">
+                            <span id="selectedCount">0</span> کاربر انتخاب شده
+                        </div>
+                    </div>
+
+                    <div class="users-list" id="usersList">
+        `;
+
+                // آیتم‌های کاربران با طراحی حرفه‌ای
+                result.Data.forEach(user => {
+                    usersHtml += `
+            <div class="user-item" data-user-id="${user.Id}">
+                <div class="user-info">
+                    <input type="checkbox" class="user-checkbox" id="user_${user.Id}" value="${user.Id}">
+                    <label for="user_${user.Id}" class="user-avatar">
+                        ${user.Name.charAt(0)}${user.Name.split(' ')[1]?.charAt(0) || ''}
+                    </label>
+                    <div class="user-details">
+                        <div class="user-name">${user.Name}</div>
+                        <div class="user-meta">
+                            <span class="user-position">${user.Position}</span>
+                            <span class="user-org">${user.Organization}</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="personal-comment-box">
+                    <textarea class="personal-comment" 
+                              placeholder="پیام شخصی برای ${user.Name}..."
+                              data-user-id="${user.Id}"></textarea>
+                    <div class="char-counter">0/200</div>
+                </div>
+            </div>
+            `;
+                });
+
+                usersHtml += `
+                    </div>
+                </div>
+            </div>
+
+            <div class="referral-footer">
+                <button class="btn cancel-btn" id="cancelBtn">
+                    <i class="icon">✖</i> انصراف
+                </button>
+                <button class="btn submit-btn" id="submitBtn">
+                    <i class="icon">📨</i> ارجاع نامه
+                </button>
+            </div>
+        </div>
+        `;
+
+                // نمایش مدال با طراحی حرفه‌ای
+                const modal = await Swal.fire({
+                    html: usersHtml,
+                    width: 900,
+                    showConfirmButton: false,
+                    customClass: {
+                        popup: 'custom-swal-popup',
+                        container: 'custom-swal-container'
+                    },
+                    didOpen: () => {
+                        // مدیریت انتخاب‌ها
+                        const selectAll = document.getElementById('selectAllUsers');
+                        const checkboxes = document.querySelectorAll('.user-checkbox');
+
+                        selectAll.addEventListener('change',
+                            () => {
+                                checkboxes.forEach(checkbox => {
+                                    checkbox.checked = selectAll.checked;
+                                });
+                                updateSelectedCount();
+                            });
+
+                        // جستجوی کاربران
+                        document.getElementById('userSearch').addEventListener('input',
+                            (e) => {
+                                const term = e.target.value.toLowerCase();
+                                document.querySelectorAll('.user-item').forEach(item => {
+                                    const name = item.querySelector('.user-name').textContent.toLowerCase();
+                                    const position = item.querySelector('.user-position').textContent.toLowerCase();
+                                    item.style.display = (name.includes(term) || (position.includes(term))) ? 'flex' : 'none';
+
+                                });
+                            });
+
+                        // شمارنده انتخاب‌ها
+                        function updateSelectedCount() {
+                            const count = document.querySelectorAll('.user-checkbox:checked').length;
+                            document.getElementById('selectedCount').textContent = count;
+                        }
+
+                        checkboxes.forEach(checkbox => {
+                            checkbox.addEventListener('change', updateSelectedCount);
+                        });
+
+                        // مدیریت شمارنده کاراکترها
+                        function setupCharCounters() {
+                            document.querySelectorAll('textarea').forEach(textarea => {
+                                const counter = textarea.nextElementSibling;
+                                textarea.addEventListener('input',
+                                    () => {
+                                        const maxLength = textarea.classList.contains('personal-comment') ? 200 : 500;
+                                        counter.textContent = `${textarea.value.length}/${maxLength}`;
+                                        counter.style.color = textarea.value.length > maxLength ? '#ff4757' : '#57606f';
+                                    });
+                            });
+                        }
+
+                        setupCharCounters();
+
+                        // دکمه ارسال
+                        document.getElementById('submitBtn').addEventListener('click',
+                            async () => {
+                                const selectedUsers = document.querySelectorAll('.user-checkbox:checked');
+
+                                if (selectedUsers.length === 0) {
+                                    Swal.showValidationMessage('حداقل یک کاربر باید انتخاب شود');
+                                    return;
+                                }
+
+                                const personalComments = {};
+                                selectedUsers.forEach(checkbox => {
+                                    const userId = checkbox.value;
+                                    const comment = document.querySelector(`.personal-comment[data-user-id="${userId}"]`).value;
+                                    if (comment) personalComments[userId] = comment;
+                                });
+
+                                try {
+                                    // ارسال درخواست
+                                    const response = await fetch('@Url.Action("MultiReferLetter", "LetterApprovalFlow")',
+                                        {
+                                            method: 'POST',
+                                            headers: { 'Content-Type': 'application/json' },
+                                            body: JSON.stringify({
+                                                LetterId: letterId,
+                                                ReceiverUserIds: Array.from(selectedUsers).map(el => el.value),
+                                                CommonComment: document.getElementById('commonComment').value,
+                                                PersonalComments: personalComments
+                                            })
+                                        });
+
+                                    const result = await response.json();
+
+                                    if (result.Success) {
+                                        Swal.fire({
+                                            title: 'عملیات موفق',
+                                            html: `
+                                <div class="success-message">
+                                    <div class="success-icon">✅</div>
+                                    <div>
+                                        <p>${result.Message}</p>
+                                        <p class="receivers-count">تعداد گیرندگان: ${result.Data.length}</p>
+                                    </div>
+                                </div>
+                                `,
+                                            icon: 'success'
+                                        });
+                                    } else {
+                                        throw new Error(result.Message);
+                                    }
+                                } catch (error) {
+                                    Swal.fire({
+                                        title: 'خطا',
+                                        text: error.message,
+                                        icon: 'error'
+                                    });
+                                }
+                            });
+
+                        // دکمه انصراف
+                        document.getElementById('cancelBtn').addEventListener('click',
+                            () => {
+                                Swal.close();
+                            });
+                    }
+                });
+            } catch
+            (error) {
+                Swal.fire({
+                    title: 'خطا',
+                    html: `
+            <div class="error-message">
+                <div class="error-icon">❌</div>
+                <div>
+                    <p>خطا در پردازش درخواست</p>
+                    <small>${error.message}</small>
+                </div>
+            </div>
+            `,
+                    icon: 'error'
+                });
+            }
+
+        }
+
+    </script>
+    <script>
+        async function rejectLetter(letterId) {
+            try {
+                // نمایش مدال زیبا برای دریافت دلیل رد
+                const { value: reason, isConfirmed } = await Swal.fire({
+                    title: '',
+                    html: `
+                <div class="reject-modal">
+                    <div class="reject-icon">
+                    <div style="color: #e74c3c;">رد نامه</div>
+                        <svg viewBox="0 0 24 24" width="64" height="64" stroke="#e74c3c" fill="none">
+                            <path d="M19 5L5 19M5 5l14 14" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="reject-message">
+                        لطفاً دلیل رد این نامه را به دقت وارد نمایید
+                    </div>
+                    <textarea id="rejectReason" 
+                              class="reject-reason-input" 
+                              placeholder="دلیل رد نامه..."
+                              rows="4"></textarea>
+                    <div class="char-counter">0/500</div>
+                </div>
+            `,
+                    background: '#fff',
+                    width: 500,
+                    showDenyButton: false,
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fas fa-ban"></i> تایید رد',
+                    cancelButtonText: '<i class="fas fa-times"></i> انصراف',
+                    confirmButtonColor: '#e74c3c',
+                    cancelButtonColor: '#7f8c8d',
+                    focusConfirm: false,
+                    allowOutsideClick: false,
+                    preConfirm: () => {
+                        const reason = document.getElementById('rejectReason').value.trim();
+                        if (!reason) {
+                            Swal.showValidationMessage('لطفاً دلیل رد را وارد کنید');
+                            return false;
+                        }
+                        if (reason.length > 500) {
+                            Swal.showValidationMessage('حداکثر ۵۰۰ کاراکتر مجاز است');
+                            return false;
+                        }
+                        return reason;
+                    },
+                    didOpen: () => {
+                        // شمارنده کاراکتر
+                        const textarea = document.getElementById('rejectReason');
+                        const counter = document.querySelector('.char-counter');
+                        textarea.addEventListener('input',
+                            () => {
+                                const length = textarea.value.length;
+                                counter.textContent = `${length}/500`;
+                                counter.style.color = length > 500 ? '#e74c3c' : '#7f8c8d';
+                            });
+                    }
+                });
+
+                // اگر کاربر انصراف داد
+                if (!isConfirmed) return;
+
+                const response = await sendRequestWithCredentials(
+                    `@Url.Action("Reject", "LetterApprovalFlow")`,
+                    'POST',
+                    {
+                        approvalId: letterId,
+                        comment: reason
+                    }
+                );
+
+                if (response.success) {
+                    // نمایش پیام موفقیت با طراحی زیبا
+                    await Swal.fire({
+                        title: '<div style="color: #27ae60;">عملیات موفق</div>',
+                        html: `
+                    <div class="success-reject">
+                        <div class="success-icon">
+                            <svg viewBox="0 0 24 24" width="64" height="64" fill="#27ae60">
+                                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z"/>
+                            </svg>
+                        </div>
+                        <div class="success-message">
+                            نامه با موفقیت رد شد
+                        </div>
+                    </div>
+                `,
+                        icon: 'success',
+                        confirmButtonText: 'متوجه شدم',
+                        willClose: () => {
+                            location.reload();
+                        }
+                    });
+                } else {
+                    await Swal.fire({
+                        title: 'خطا',
+                        text: response.message || 'عملیات رد نامه ناموفق بود',
+                        icon: 'error',
+                        confirmButtonText: 'متوجه شدم'
+                    });
+                }
+            } catch (error) {
+                console.error('Error in rejectLetter:', error);
+                await Swal.fire({
+                    title: 'خطای ارتباط',
+                    html: `
+                <div class="error-reject">
+                    <div class="error-icon">⚠️</div>
+                    <div class="error-message">
+                        خطا در ارتباط با سرور
+                        <small>${error.message}</small>
+                    </div>
+                </div>
+            `,
+                    icon: 'error'
+                });
+            }
+        }
+
+        function getStatusText(status) {
+            const statusMap = {
+                'Pending': '⏳ در انتظار تایید',
+                'Approved': '✅ تایید شده',
+                'Rejected': '❌ رد شده',
+                'Returned': '↩️ بازگشت داده شده'
+            };
+            return statusMap[status] || status;
+        }
+
+
+    </script>
+    <script>
+        async function deleteLetter(letterId, letterNumber) {
+            try {
+                // نمایش دیالوگ تأیید حذف با طراحی پیشرفته
+                const confirmResult = await Swal.fire({
+                    title: '<span style="color: #e74c3c">حذف نامه</span>',
+                    html: `
+                <div class="animated-confirmation">
+                    <div class="icon-container">
+                        <div class="warning-pulse">
+                            <svg class="warning-icon" viewBox="0 0 24 24" width="80" height="80" fill="#e67e22">
+                                <path d="M12 2L1 21h22L12 2zm0 4l7.53 13H4.47L12 6zm-1 4v4h2v-4h-2zm0 6v2h2v-2h-2z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <div class="message-container">
+                        <h3 class="warning-title">آیا از حذف نامه مطمئن هستید؟</h3>
+                        <div class="letter-details">
+                            <span class="detail-label">شماره نامه:</span>
+                            <span class="detail-value">${letterNumber}</span>
+                        </div>
+                        <div class="warning-note">
+                            <i class="note-icon">⚠️</i>
+                            <span>این عمل غیرقابل بازگشت خواهد بود</span>
+                        </div>
+                    </div>
+                </div>
+            `,
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fas fa-trash"></i> تایید حذف',
+                    cancelButtonText: '<i class="fas fa-times"></i> انصراف',
+                    confirmButtonColor: '#e74c3c',
+                    cancelButtonColor: '#7f8c8d',
+                    customClass: {
+                        popup: 'modern-swal-popup',
+                        confirmButton: 'animated-button',
+                        cancelButton: 'animated-button'
+                    },
+                    backdrop: `
+                rgba(231, 76, 60, 0.1)
+                url("/assets/img/pattern-danger.png")
+                center top
+                repeat
+            `,
+                    buttonsStyling: false,
+                    showClass: {
+                        popup: 'animate__animated animate__fadeInDown'
+                    },
+                    hideClass: {
+                        popup: 'animate__animated animate__fadeOutUp'
+                    }
+                });
+
+                if (!confirmResult.isConfirmed) return;
+
+                // نمایش loader پیشرفته
+                const loader = Swal.fire({
+                    title: '<div class="deleting-text">در حال حذف نامه...</div>',
+                    html: `
+                <div class="progress-container">
+                    <div class="progress-bar"></div>
+                </div>
+                <div class="loading-icon">
+                    <div class="trash-icon">
+                        <i class="fas fa-trash"></i>
+                    </div>
+                    <div class="paper-plane">
+                        <i class="fas fa-paper-plane"></i>
+                    </div>
+                </div>
+            `,
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    willOpen: () => {
+                        // انیمیشن پیشرفت
+                        const progressBar = document.querySelector('.progress-bar');
+                        let width = 0;
+                        const interval = setInterval(() => {
+                                if (width >= 100) {
+                                    clearInterval(interval);
+                                } else {
+                                    width += 5;
+                                    progressBar.style.width = width + '%';
+                                }
+                            },
+                            200);
+                    }
+                });
+
+                // ارسال درخواست حذف
+                const result = await sendRequestWithCredentials(
+                    `@Url.Action("DeleteLetter", "LetterApprovalFlow")`,
+                    'POST',
+                    letterId
+                );
+
+                // بستن loader
+                await Swal.close();
+
+                if (result.Success) {
+                    // نمایش پیام موفقیت با انیمیشن
+                    await Swal.fire({
+                        title: '<span style="color: #27ae60">عملیات موفق</span>',
+                        html: `
+                    <div class="success-animation">
+                        <div class="checkmark-circle">
+                            <div class="background"></div>
+                            <div class="checkmark draw"></div>
+                        </div>
+                        <div class="success-content">
+                            <h3 class="success-title">نامه با موفقیت حذف شد</h3>
+                            <div class="letter-info">
+                                <div class="info-item">
+                                    <span class="info-label">شماره نامه:</span>
+                                    <span class="info-value">${letterNumber}</span>
+                                </div>
+                                <div class="info-item">
+                                    <span class="info-label">زمان حذف:</span>
+                                    <span class="info-value">${new Date().toLocaleTimeString('fa-IR')}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                        icon: 'success',
+                        confirmButtonText: '<i class="fas fa-check"></i> انتقال به لیست نامه‌ها',
+                        timer: 5000,
+                        timerProgressBar: true,
+                        willClose: () => {
+                            window.location.href = '@Url.Action("Index", "Letter")';
+                        },
+                        customClass: {
+                            popup: 'success-swal-popup',
+                            confirmButton: 'success-button'
+                        },
+                        showClass: {
+                            popup: 'animate__animated animate__bounceIn'
+                        },
+                        hideClass: {
+                            popup: 'animate__animated animate__fadeOut'
+                        }
+                    });
+                } else {
+                    // نمایش خطا با طراحی ویژه
+                    await Swal.fire({
+                        title: '<span style="color: #e74c3c">خطا در حذف</span>',
+                        html: `
+                    <div class="error-animation">
+                        <div class="error-icon">
+                            <div class="error-x-mark">
+                                <span class="x-mark-line left"></span>
+                                <span class="x-mark-line right"></span>
+                            </div>
+                        </div>
+                        <div class="error-content">
+                            <h3 class="error-title">عملیات حذف ناموفق بود</h3>
+                            <div class="error-message">${result.Message || 'خطای نامشخص'}</div>
+                            <div class="error-actions">
+                                <button class="retry-button" onclick="deleteLetter(${letterId}, '${letterNumber}')">
+                                    <i class="fas fa-redo"></i> تلاش مجدد
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                        showConfirmButton: false,
+                        customClass: {
+                            popup: 'error-swal-popup'
+                        },
+                        showClass: {
+                            popup: 'animate__animated animate__headShake'
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error in deleteLetter:', error);
+
+                // نمایش خطای سیستمی با طراحی ویژه
+                await Swal.fire({
+                    title: '<span style="color: #e74c3c">خطای سیستمی</span>',
+                    html: `
+                <div class="system-error">
+                    <div class="error-icon">
+                        <i class="fas fa-bug"></i>
+                    </div>
+                    <div class="error-details">
+                        <h3>خطا در ارتباط با سرور</h3>
+                        <div class="technical-details">
+                            <p>${error.message || 'خطای نامشخص'}</p>
+                            <button class="technical-button" onclick="showErrorDetails('${error.message}')">
+                                نمایش جزئیات فنی
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `,
+                    confirmButtonText: '<i class="fas fa-times"></i> بستن',
+                    customClass: {
+                        popup: 'system-error-popup'
+                    }
+                });
+            }
+        }
+
+// تابع کمکی برای نمایش جزئیات خطا
+        function showErrorDetails(message) {
+            Swal.fire({
+                title: 'جزئیات فنی خطا',
+                text: message,
+                icon: 'info',
+                confirmButtonText: 'متوجه شدم'
+            });
+        }
+
+
+    </script>
+    <script>
+
+        async function addLetterAction(letterId, letterNumber) {
+            try {
+                // نمایش مدال با طراحی زیبا
+                const { value: description, isConfirmed } = await Swal.fire({
+                    title: '<span style="color: #3498db">ثبت اقدام جدید</span>',
+                    html: `
+                <div class="action-modal">
+                    <div class="letter-info">
+                        <i class="fas fa-envelope"></i>
+                        <span>نامه شماره ${letterNumber}</span>
+                    </div>
+                    <div class="form-group">
+                        <label>توضیحات اقدام:</label>
+                        <textarea style="width:85%;" 
+                            id="actionDescription" 
+                            class="swal2-textarea animated-textarea" 
+                            placeholder="متن اقدام خود را با جزئیات وارد نمایید..."
+                            rows="5"></textarea>
+                        <div class="char-counter">0/500 کاراکتر</div>
+                    </div>
+                </div>
+            `,
+                    focusConfirm: false,
+                    showCancelButton: true,
+                    confirmButtonText: '<i class="fas fa-check "></i> ثبت نهایی',
+                    cancelButtonText: '<i class="fas fa-times"></i> انصراف',
+                    confirmButtonColor: '#2ecc71',
+                    cancelButtonColor: '#e74c3c',
+                    customClass: {
+                        popup: 'custom-action-modal',
+                        textarea: 'animated-textarea'
+                    },
+                    backdrop: `
+                rgba(52, 152, 219, 0.1)
+                url("/assets/img/pattern-blue.png")
+                left top
+                repeat
+            `,
+                    preConfirm: () => {
+                        const desc = document.getElementById('actionDescription').value.trim();
+                        if (!desc) {
+                            Swal.showValidationMessage('لطفاً توضیحات اقدام را وارد کنید');
+                            return false;
+                        }
+                        if (desc.length > 500) {
+                            Swal.showValidationMessage('حداکثر ۵۰۰ کاراکتر مجاز است');
+                            return false;
+                        }
+                        return desc;
+                    },
+                    didOpen: () => {
+                        // شمارنده کاراکترها
+                        const textarea = document.getElementById('actionDescription');
+                        const counter = document.querySelector('.char-counter');
+                        textarea.addEventListener('input',
+                            () => {
+                                const length = textarea.value.length;
+                                counter.textContent = `${length}/500 کاراکتر`;
+                                counter.style.color = length > 500 ? '#e74c3c' : '#7f8c8d';
+                            });
+
+                        // انیمیشن فوکوس
+                        textarea.addEventListener('focus',
+                            () => {
+                                textarea.style.borderColor = '#3498db';
+                                textarea.style.boxShadow = '0 0 0 3px rgba(52, 152, 219, 0.2)';
+                            });
+
+                        textarea.addEventListener('blur',
+                            () => {
+                                textarea.style.borderColor = '#ddd';
+                                textarea.style.boxShadow = 'none';
+                            });
+                    }
+                });
+
+                if (!isConfirmed || !description) return;
+
+                // نمایش لودر زیبا
+                Swal.fire({
+                    title: 'در حال ثبت اقدام',
+                    html: `
+                <div class="action-loader">
+                    <div class="loader-icon">
+                        <i class="fas fa-pen-fancy rotating"></i>
+                    </div>
+                    <div class="loader-text">
+                        در حال ذخیره اطلاعات...
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-bar" id="actionProgress"></div>
+                    </div>
+                </div>
+            `,
+                    allowOutsideClick: false,
+                    showConfirmButton: false,
+                    willOpen: () => {
+                        // انیمیشن پیشرفت
+                        const progressBar = document.getElementById('actionProgress');
+                        let width = 0;
+                        const interval = setInterval(() => {
+                                if (width >= 100) {
+                                    clearInterval(interval);
+                                } else {
+                                    width += 5;
+                                    progressBar.style.width = width + '%';
+                                }
+                            },
+                            100);
+                    }
+                });
+                const result = await sendRequestWithCredentials(
+                    `@Url.Action("AddAction", "LetterApprovalFlow")`,
+                    'POST',
+                    {
+                        LetterId: letterId,
+                        Description: description
+                    }
+                );
+
+                Swal.close();
+
+                if (result.Success) {
+                    // نمایش پیام موفقیت با انیمیشن
+                    await Swal.fire({
+                        title: '<span style="color: #2ecc71">اقدام ثبت شد</span>',
+                        html: `
+                    <div class="success-action">
+                        <div class="success-animation">
+                            <svg class="checkmark" viewBox="0 0 52 52">
+                                <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
+                                <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                            </svg>
+                        </div>
+                        <div class="success-message">
+                            <p>اقدام شما با موفقیت ثبت شد</p>
+                            <div class="action-id">
+                                کد رهگیری: <span>${result.ActionId}</span>
+                            </div>
+                        </div>
+                    </div>
+                `,
+                        icon: 'success',
+                        confirmButtonText: '<i class="fas fa-thumbs-up"></i> متوجه شدم',
+                        timer: 3000,
+                        timerProgressBar: true,
+                        showClass: {
+                            popup: 'animate__animated animate__bounceIn'
+                        },
+                        hideClass: {
+                            popup: 'animate__animated animate__fadeOut'
+                        }
+                    });
+
+                    // رفرش لیست اقدامات
+                    loadLetterActions(letterId,letterNumber);
+                } else {
+                    throw new Error(result.Error || 'خطا در ثبت اقدام');
+                }
+            } catch (error) {
+                console.error('Error in addLetterAction:', error);
+
+                // نمایش خطا
+                await Swal.fire({
+                    title: '<span style="color: #e74c3c">خطا</span>',
+                    html: `
+                <div class="error-action">
+                    <div class="error-icon">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div class="error-message">
+                        <p>خطا در ثبت اقدام</p>
+                        <small>${error.message}</small>
+                    </div>
+                </div>
+            `,
+                    icon: 'error',
+                    confirmButtonText: '<i class="fas fa-redo"></i> تلاش مجدد',
+                    showCancelButton: true,
+                    cancelButtonText: 'انصراف'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        addLetterAction(letterId, letterNumber);
+                    }
+                });
+            }
+        }
+
+// تابع کمکی برای بارگیری مجدد لیست اقدامات
+        function loadLetterActions(letterId,letterNumber) {
+            // پیاده‌سازی بارگیری مجدد لیست اقدامات
+            console.log('Reloading actions for letter:', letterId);
+        }
+
+
+    </script>
+    <script>
+        // تابع اصلی برای دریافت اقدامات با jQuery
+        function loadLetterActions(letterId, letterNumber) {
+            // نمایش لودر
+            const loadingSwal = Swal.fire({
+                title: 'در حال دریافت اقدامات',
+                html: 'لطفاً منتظر بمانید...',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+
+            // ارسال درخواست با jQuery
+            $.ajax({
+                url: '@Url.Action("GetActions", "LetterApprovalFlow")',
+                type: 'POST',
+                contentType: 'application/json',
+                headers: {
+                    'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val()
+                },
+                data: JSON.stringify(letterId),
+                success: function(response) {
+                    loadingSwal.close();
+
+                    // بررسی ساختار پاسخ
+                    if (response && response.Success && response.Data) {
+                        showActionsModal(response.Data, letterNumber, letterId);
+                    } else {
+                        throw new Error(response.Error?.Message || 'خطا در دریافت داده‌ها');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    loadingSwal.close();
+                    console.error('Error Details:', xhr.responseText);
+
+                    let errorMessage = 'خطا در دریافت اقدامات';
+                    try {
+                        const errorResponse = JSON.parse(xhr.responseText);
+                        errorMessage = errorResponse.Error?.Message || errorResponse.message || errorMessage;
+                    } catch (e) {
+                        errorMessage = xhr.responseText || errorMessage;
+                    }
+
+                    Swal.fire({
+                        title: 'خطا',
+                        text: errorMessage,
+                        icon: 'error',
+                        confirmButtonText: 'متوجه شدم'
+                    });
+                }
+            });
+        }
+
+        // تابع نمایش مودال اقدامات (نسخه زیبا و بهینه)
+        function showActionsModal(data, letterNumber, letterId) {
+
+
+            // ساختار HTML اصلی
+            let actionsHtml = `
+    <div class="letter-actions-modal">
+        <div class="modal-header p-3 rounded-top">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0"><i class="fas fa-history ml-2"></i>تاریخچه اقدامات</h5>
+                </div>
+                <div class="action-summary"> </div>
+                <div class="action-summary">
+                    <p class="mb-0 small mt-1">شماره نامه: <span class="badge badge-light">${letterNumber}</span></p>
+                    <span class="badge badge-info">تعداد: ${data.TotalCount || 0}</span>
+                </div>
+            </div>
+        </div>
+        <div class="modal-body p-0">
+            <div class="actions-list" style="max-height: 60vh; overflow-y: auto;">
+    `;
+
+            // حالت خالی
+            if (!data.Actions || data.Actions.length === 0) {
+                actionsHtml += `
+            <div class="empty-state text-center py-5">
+                <i class="far fa-clock fa-3x text-muted mb-3"></i>
+                <p class="text-muted">هنوز اقدامی ثبت نشده است</p>
+            </div>
+        `;
+            } else {
+                // نمایش هر اقدام
+                data.Actions.forEach((action, index) => {
+                    actionsHtml += `
+            <div class="action-item ${action.IsCurrentUser ? 'current-user' : ''} ${index === 0 ? 'first-action' : ''} p-3 border-bottom">
+                <div class="d-flex align-items-start">
+                    <div class="user-avatar mr-3">
+                        <div class="avatar-circle ${action.IsCurrentUser ? 'bg-primary' : 'bg-secondary'}">
+                            ${action.UserFullName ? action.UserFullName.charAt(0) : '?'}
+                        </div>
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <h6 class="mb-0 font-weight-bold">${action.UserFullName || 'نامشخص'}
+                                ${action.IsCurrentUser ? '<span class="badge badge-primary badge-pill small mr-2">شما</span>' : ''}
+                            </h6>
+                            <span class="text-muted small time-ago">${action.TimeAgo || ''}</span>
+                        </div>
+                        <div class="action-desc mb-2">${action.ActionDescription || 'بدون توضیح'}</div>
+                        <div class="text-muted small">
+                            <i class="far fa-clock ml-1"></i> ${action.ActionDate}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            `;
+                });
+            }
+
+            actionsHtml += `
+            </div>
+        </div>
+        <div class="modal-footer bg-light d-flex justify-content-between align-items-center rounded-bottom">
+            <small class="text-muted">تاریخ نمایش: ${new Date()}</small>
+            <button type="button" class="btn btn-success" onclick="addLetterAction(${letterId}, '${letterNumber}')">
+                <i class="fas fa-plus-circle ml-1"></i> اقدام جدید
+            </button>
+        </div>
+    </div>
+    `;
+
+            // نمایش مودال
+            Swal.fire({
+                html: actionsHtml,
+                width: '800px',
+                showConfirmButton: false,
+                showCloseButton: true,
+                customClass: {
+                    container: 'letter-actions-modal-container',
+                    popup: 'rounded-lg'
+                }
+            });
+        }
+
+// فعال کردن tooltip‌ها
+        $(function() {
+            $('[data-bs-toggle="tooltip"]').tooltip();
+        });
+    </script>
+    <script>
+       async function returnLetter(letterId) {
+    try {
+        const { value: returnData, isConfirmed } = await Swal.fire({
+            title: 'عودت نامه',
+            html: `
+                <div class="reject-modal">
+                    <div class="reject-icon">
+                        <svg viewBox="0 0 24 24" width="64" height="64" stroke="#3498db" fill="none">
+                            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41L9 16.17z" stroke-width="2"/>
+                            <path d="M19 10l-7-7m0 0L5 17m7-7l7 7" stroke-width="2" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <div class="reject-message">
+                        لطفاً دلیل عودت این نامه را وارد نمایید
+                    </div>
+                    <textarea id="returnReason" 
+                              class="reject-reason-input" 
+                              placeholder="دلیل عودت نامه..."
+                              rows="4"></textarea>
+                    <div class="char-counter">0/500</div>
+                </div>
+            `,
+            confirmButtonText: 'تایید عودت',
+            cancelButtonText: 'انصراف',
+            confirmButtonColor: '#3498db',
+            showCancelButton: true,
+            preConfirm: () => {
+                const reason = document.getElementById('returnReason').value.trim();
+                if (!reason) {
+                    Swal.showValidationMessage('لطفاً دلیل عودت را وارد کنید');
+                    return false;
+                }
+                return { 
+                    LetterId: letterId,
+                    Description: reason 
+                };
+            }
+        });
+
+        if (!isConfirmed) return;
+        
+        const result = await sendRequestWithCredentials(
+            `@Url.Action("ReturnLetter", "LetterApprovalFlow")`,
+            'POST',
+            returnData // استفاده از داده‌های بازگشتی از preConfirm
+        );
+
+        if (result.Success) {
+            await Swal.fire({
+                title: 'موفقیت',
+                text: result.Message,
+                icon: 'success'
+            });
+            location.reload();
+        } else {
+            throw new Error(result.Message);
+        }
+    } catch (error) {
+        Swal.fire({
+            title: 'خطا',
+            text: error.message,
+            icon: 'error'
+        });
+    }
+}
+// تابع بایگانی در کلاسه خاص
+        async function archiveLetter(letterId) {
+            try {
+                // دریافت لیست کلاسه‌ها از سرور
+                const response = await fetch('@Url.Action("GetAll", "Kelasehnamehs")');
+                const classifications = await response.json();
+
+                if (!classifications || classifications.length === 0) {
+                    throw new Error('کلاسه‌ای یافت نشد');
+                }
+
+                // ایجاد لیست انتخاب کلاسه
+                let optionsHtml = classifications.map(c =>
+                    `<option value="${c.CodeKelaseh}">${c.CodeKelaseh} - ${c.NameKelaseh}</option>`
+                ).join('');
+
+                const { value: formValues, isConfirmed } = await Swal.fire({
+                    title: 'بایگانی نامه',
+                    html: `
+                <div style="text-align: right;">
+                    <label for="classification" style="display: block; margin-bottom: 8px;">کلاسه بایگانی:</label>
+                    <select id="classification" class="swal2-select select2" style="width: -webkit-fill-available;">
+                        ${optionsHtml}
+                    </select>
+                    <textarea id="archiveDesc" class="swal2-textarea" placeholder="توضیحات (اختیاری)" style="margin-top: 10px;width: -webkit-fill-available;"></textarea>
+                </div>
+            `,
+                    confirmButtonText: 'تایید بایگانی',
+                    cancelButtonText: 'انصراف',
+                    showCancelButton: true,
+                    preConfirm: () => {
+                        const code = document.getElementById('classification').value;
+                        const desc = document.getElementById('archiveDesc').value;
+                        return {
+                            LetterId: letterId,
+                            ClassificationCode: parseInt(code),
+                            Description: desc
+                        };
+                    }
+                });
+
+                if (!isConfirmed) return;
+
+                // ارسال درخواست بایگانی
+                const result = await sendRequestWithCredentials(
+                    '@Url.Action("ArchiveLetter", "LetterApprovalFlow")',
+                    'POST',
+                    formValues
+                );
+
+                if (result.Success) {
+                    await Swal.fire({
+                        title: 'موفقیت',
+                        text: result.Message,
+                        icon: 'success'
+                    });
+                    location.reload();
+                } else {
+                    throw new Error(result.Message);
+                }
+            } catch (error) {
+                Swal.fire({
+                    title: 'خطا',
+                    text: error.message,
+                    icon: 'error'
+                });
+            }
+        }
+
+// تابع بایگانی سریع
+        async function quickArchive(letterId) {
+            try {
+                const confirmResult = await Swal.fire({
+                    title: 'بایگانی سریع',
+                    text: 'آیا مطمئن هستید می‌خواهید این نامه را بایگانی کنید؟',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'بله، بایگانی شود',
+                    cancelButtonText: 'انصراف'
+                });
+
+                if (!confirmResult.isConfirmed) return;
+
+                const result = await sendRequestWithCredentials(
+                    '@Url.Action("QuickArchive", "LetterApprovalFlow")',
+                    'POST',
+                    letterId
+                );
+
+                if (result.Success) {
+                    await Swal.fire({
+                        title: 'موفقیت',
+                        text: result.Message,
+                        icon: 'success'
+                    });
+                    location.reload();
+                } else {
+                    throw new Error(result.Message);
+                }
+            } catch (error) {
+                Swal.fire({
+                    title: 'خطا',
+                    text: error.message,
+                    icon: 'error'
+                });
+            }
+        }
+    </script>
+}

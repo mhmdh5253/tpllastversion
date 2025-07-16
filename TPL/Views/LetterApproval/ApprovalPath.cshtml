@@ -1,0 +1,57 @@
+﻿@using BE.LetterAutomation
+@model List<BE.LetterAutomation.LetterApproval>
+
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">سلسله مراتب تایید نامه</h3>
+    </div>
+    <div class="card-body">
+        <div class="timeline">
+            @foreach (var item in Model)
+            {
+                <div class="time-label">
+                    <span class="bg-@(item.Status == ApprovalStatus.Approved ? "success" : 
+                                      item.Status == ApprovalStatus.Rejected ? "danger" : 
+                                      item.Status == ApprovalStatus.Returned ? "info" : "warning")">
+                        سطح @item.ApprovalLevel
+                    </span>
+                </div>
+                
+                <div>
+                    <i class="fas fa-user bg-blue"></i>
+                    <div class="timeline-item">
+                        <span class="time"><i class="fas fa-clock"></i> @item.RequestDate</span>
+                        <h3 class="timeline-header">
+                            @item.Approver!.FirstName @item.Approver.LastName
+                            <small>@item.Approver.Semat - @item.Organization!.Name</small>
+                        </h3>
+                        <div class="timeline-body">
+                            @if (!string.IsNullOrEmpty(item.Comment))
+                            {
+                                <p>@item.Comment</p>
+                            }
+                            <p>
+                                وضعیت: 
+                                @switch (item.Status)
+                                {
+                                    case ApprovalStatus.Pending:
+                                        <span class="badge badge-warning">در انتظار</span>
+                                        break;
+                                    case ApprovalStatus.Approved:
+                                        <span class="badge badge-success">تایید شده</span>
+                                        break;
+                                    case ApprovalStatus.Rejected:
+                                        <span class="badge badge-danger">رد شده</span>
+                                        break;
+                                    case ApprovalStatus.Returned:
+                                        <span class="badge badge-info">بازگشت داده شده</span>
+                                        break;
+                                }
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    </div>
+</div>
